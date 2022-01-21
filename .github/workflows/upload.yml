@@ -33,3 +33,11 @@ jobs:
         run: |
           pip install beautifulsoup4
           python .github/upload.py
+
+#      - name: Create Pull Request
+#        uses: peter-evans/create-pull-request@v3
+#        with:
+#          commit-message: ":package: [:robot:] Modify package in PyPi index"
+#          title: "[🤖] ${{ github.event.issue.title }}"
+#          body: "Fix #${{ github.event.issue.number }}"
+#          branch: "pr/patch-${{ github.event.issue.number }}"
