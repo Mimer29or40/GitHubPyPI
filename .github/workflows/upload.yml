@@ -7,9 +7,6 @@ on:
     types: [ opened, edited ]
     branches: [ master ]
 
-  # Allows you to run this workflow manually from the Actions tab
-#  workflow_dispatch:
-
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # This workflow contains a single job called "build"
@@ -36,11 +33,3 @@ jobs:
         run: |
           pip install beautifulsoup4
           python .github/upload.py
-
-#      - name: Create Pull Request
-#        uses: peter-evans/create-pull-request@v3
-#        with:
-#          commit-message: ":package: [:robot:] Modify package in PyPi index"
-#          title: "[🤖] ${{ github.event.issue.title }}"
-#          body: "Fix #${{ github.event.issue.number }}"
-#          branch: "pr/patch-${{ github.event.issue.number }}"
