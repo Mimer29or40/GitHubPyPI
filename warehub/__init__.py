@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Union, Any
+from typing import Any, Optional
 
 import requests
 
@@ -13,48 +14,128 @@ from .metadata import MetadataForm
 from .model import DATA_FILE, Project
 from .package import Package
 
-
 __version__ = '1.0.0'
 
+from .secrets import Secrets
 
-def parse_issue(issue_ctx, *arguments: Union[tuple[str, str], tuple[str, str, str]]) -> dict[str, str]:
-    secrets = json.loads(os.environ['SECRETS']) if 'SECRETS' in os.environ else {}
+secrets = Secrets()
+
+
+@dataclass(frozen=True)
+class Argument:
+    long_name: Optional[str]
+    short_name: Optional[str]
+    default: Optional[str] = field(default=None)
+    help: str = field(default='')
+
+
+default_domain = 'https://api.github.com'
+default_username = secrets.get_name('USERNAME')
+default_password = secrets.get_name('PASSWORD')
+
+arguments: dict[str, Argument] = {
+    'repository': Argument(long_name='repository',
+                           short_name=None,
+                           help='The path of the github repository. {user}/{repo_name}'
+                           ),
+    'domain':     Argument(long_name='--domain',
+                           short_name='-d',
+                           default=default_domain,
+                           help=f'The domain of the github api. '
+                                f'[Default: {default_domain}]'
+                           ),
+    'username':   Argument(long_name='--username',
+                           short_name='-u',
+                           default=default_username,
+                           help=f'The username to use to login to github. '
+                                f'Surround with {secrets.token} to get from environment (case sensitive). '
+                                f'[Default: {default_username}]'
+                           ),
+    'password':   Argument(long_name='--password',
+                           short_name='-p',
+                           default=default_password,
+                           help=f'The password to use to login to github. '
+                                f'Surround with {secrets.token} to get from environment (case sensitive). '
+                                f'[Default: {default_password}]'
+                           ),
+}
+
+
+def github(argv: list[str]) -> None:
+    parser = argparse.ArgumentParser(
+        prog='warehub github',
+        description='Parses the args provided the github environment variable'
+    )
+
+    parser.parse_args(argv)
     
-    args = {}
-    for line in issue_ctx['body'].replace('\r', '').split('\n'):
+    if 'GITHUB_CONTEXT' not in os.environ:
+        raise KeyError(f'\'GITHUB_CONTEXT\' is not in environment. Did you mean to run \'upload\'')
+    
+    # Get the context from the environment variable
+    context = json.loads(os.environ['GITHUB_CONTEXT'])
+    
+    args = []
+    for line in context['event']['issue']['body'].replace('\r', '').split('\n'):
         if (match := re.match(r'- \*\*(\w+):\*\*\s*(.*)', line)) is not None:
-            name = match.group(1).lower()
-            value = match.group(2)
-            
-            if (match := re.match(r'##(\w+)##', value)) is not None:
-                if match.group(1) not in secrets:
-                    raise KeyError(f'Requested secret not present: %%{match.group(1)}%%')
-                value = secrets[match.group(1)]
-            
-            args[name] = value
+            if (name := match.group(1).lower()) in arguments:
+                if (argument := arguments[name]).default is None:
+                    args.append(match.group(2))
+                else:
+                    args.extend([argument.long_name, match.group(2)])
+    upload(args)
+
+
+def upload(argv: list[str]) -> None:
+    parser = argparse.ArgumentParser(
+        prog='warehub upload',
+    )
     
-    @dataclass(frozen=True)
-    class Argument:
-        name: str
-        string: str
-        default: str = None
+    for name, arg in arguments.items():
+        names = (arg.long_name,) + (() if arg.short_name is None else (arg.short_name,))
+        parser.add_argument(
+            *names,
+            metavar=name,
+            default=arg.default,
+            help=arg.help,
+        )
+    args = vars(parser.parse_args(argv))
     
-    for argument in map(lambda a: Argument(*a), arguments):
-        if argument.name not in args:
-            if argument.default is None:
-                raise ValueError(f'Missing required argument: {argument.name}\n\t{argument.string}')
-            args[argument.name] = argument.default
-        if args[argument.name].strip() == '':
-            if argument.default is None:
-                raise ValueError(f'Argument is empty: {argument.name}\n\t{argument.string}')
-            args[argument.name] = argument.default
+    for name in arguments:
+        if secrets.is_name(args[name]):
+            args[name] = secrets.get(args[name])
     
+    handle_arguments(**args)
+
+
+commands = {c.__name__: c for c in {
+    github,
+    upload
+}}
+
+
+def handle_arguments(**args):
     print('--- Arguments Provided ---')
     for name, value in args.items():
         print(f'\t{name}: \'{value}\'')
     print()
     
-    return args
+    files = download_files(**args)
+    
+    # Determine if the user has passed in pre-signed distributions
+    signatures: dict[str, Path] = {d.name: d for d in files if d.suffix == '.asc'}
+    uploads = [i for i in files if i.suffix != '.asc']
+    
+    packages = [make_package(file, signatures) for file in uploads]
+    
+    data = json.loads(DATA_FILE.read_text()) if DATA_FILE.exists() else {}
+    
+    added_packages = [p for p in packages if process_package(p, data)]
+    
+    urls = {f'simple/{package.safe_name}/{package.metadata.version}/' for package in added_packages}
+    print('View at:')
+    for url in urls:
+        print(url)
 
 
 def download_files(domain: str, repository: str, username: str, password: str) -> list[Path]:
@@ -127,32 +208,3 @@ def process_package(package: Package, data: dict[str, Any]) -> bool:
     print(f'Uploading {package.file}')
     
     return True
-
-
-def main():
-    # Get the context from the environment variable
-    context = json.loads(os.environ['GITHUB_CONTEXT'])
-    issue_ctx = context['event']['issue']
-    
-    args = parse_issue(issue_ctx,
-                       ('domain', 'The domain of the github api', 'https://api.github.com'),
-                       ('repository', 'The path of the github repository'),
-                       ('username', 'The username to use to access the repository', ''),
-                       ('password', 'The password to use to access the repository', ''))
-    
-    files = download_files(**args)
-    
-    # Determine if the user has passed in pre-signed distributions
-    signatures: dict[str, Path] = {d.name: d for d in files if d.suffix == '.asc'}
-    uploads = [i for i in files if i.suffix != '.asc']
-    
-    packages = [make_package(file, signatures) for file in uploads]
-    
-    data = json.loads(DATA_FILE.read_text()) if DATA_FILE.exists() else {}
-    
-    added_packages = [p for p in packages if process_package(p, data)]
-    
-    urls = {f'simple/{package.safe_name}/{package.metadata.version}/' for package in added_packages}
-    print('View at:')
-    for url in urls:
-        print(url)

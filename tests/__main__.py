@@ -15,8 +15,8 @@ def main():
         f'',
         f'- **Domain:** https://api.github.com',
         f'- **Repository:** Mimer29or40/pythonnet-stubs',
-        # f'- **Username:** $$USERNAME$$',
-        # f'- **Password:** $$PASSWORD$$',
+        # f'- **Username:** ##USERNAME##',
+        # f'- **Password:** ##PASSWORD##',
     ))
     obj = {
         'token':             '***',
@@ -238,7 +238,7 @@ def main():
     
     os.environ['GITHUB_CONTEXT'] = json.dumps(obj)
     
-    warehub.main()
+    warehub.github([])
 
 
 if __name__ == '__main__':

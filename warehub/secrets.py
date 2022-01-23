@@ -9,7 +9,6 @@ class Secrets:
         self._name = name
         self._token = token
         self._regex = re.compile(rf'^{token}(\w+){token}$')
-        self._secrets = json.loads(os.environ[name]) if name in os.environ else {}
     
     @property
     def name(self) -> str:
@@ -24,6 +23,10 @@ class Secrets:
         self._token = token
         self._regex = re.compile(rf'^{token}(\w+){token}$')
     
+    @property
+    def secrets(self):
+        return json.loads(os.environ[self._name]) if self._name in os.environ else {}
+    
     def is_name(self, name: str) -> bool:
         """Returns True if the name is a secret name"""
         return self._regex.match(name) is not None
@@ -37,8 +40,9 @@ class Secrets:
     def get(self, name: str) -> Any:
         if (m := self._regex.match(name)) is not None:
             name = m.group(1)
-            if name not in self._secrets:
+            secrets = self.secrets
+            if name not in secrets:
                 raise KeyError(f'Requested secret not present: {name}')
-            return self._secrets[name]
+            return secrets[name]
         else:
             raise ValueError(f'name \'{name}\' is not a secret name')
