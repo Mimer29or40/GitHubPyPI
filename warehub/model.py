@@ -137,7 +137,6 @@ class Release(Table):
 class File(Table):
     release_id: int = -1
     name: str = None
-    path: str = None
     python_version: str = None
     package_type: PackageType = PackageType.none
     comment_text: str = None
@@ -150,8 +149,13 @@ class File(Table):
     uploaded_via: str = None
     
     @property
-    def pgp_path(self):
-        return self.path / '.asc'
+    def pgp_name(self):
+        return self.name + '.asc'
+
+
+@dataclass
+class FileName(Table):
+    name: str
 
 
 @dataclass(frozen=True)

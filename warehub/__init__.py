@@ -1,9 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
-import hmac
-import io
 import json
 import os
 import re
@@ -15,11 +12,10 @@ from pathlib import Path
 from pprint import pprint
 from typing import Optional
 
-import packaging.utils
 import requests
 
 from .database import Database
-from .model import Project, Release, File
+from .model import Project, Release, File, FileName
 from .package import Package
 
 __version__ = '1.0.0'
@@ -145,7 +141,7 @@ def handle_arguments(args: Arguments):
     password = secrets.get(p) if secrets.is_name(p := args.password) else p
     
     auth = (username or '', password or '') if username or password else None
-
+    
     print(f'Downloading Releases from: {repository_url}')
     response = requests.get(f'{repository_url}/releases', auth=auth)
     releases_obj = response.json()
@@ -159,7 +155,7 @@ def handle_arguments(args: Arguments):
         for info in releases_obj:
             for asset in info['assets']:
                 file_url = asset['browser_download_url']
-
+                
                 print(f'Downloading File: {file_url}')
                 download = requests.get(file_url, auth=auth)
                 if download.status_code != requests.codes.ok:
@@ -188,7 +184,7 @@ def make_package(file: Path, signatures: dict[str, Path]) -> Optional[Package]:
     package = Package(file, None)
     
     if (signed_name := package.signed_file.name) in signatures:
-        package.add_gpg_signature(signatures[signed_name])
+        package.gpg_signature = signatures[signed_name]
     
     print(f'Package created for file: \'{package.file.name}\' ({file_size_str(package.file.stat().st_size)})')
     if package.gpg_signature:
@@ -254,34 +250,23 @@ def make_package(file: Path, signatures: dict[str, Path]) -> Optional[Package]:
     else:
         release = releases[0]
     
-    # Update project information if release if greater version than project
+    filenames = Database.get(FileName, where=FileName.name == package.file.name)
+    if len(filenames) > 0:
+        raise ValueError(f'File already exists with that name: {package.file.name}')
+    Database.put(FileName, FileName(package.file.name))
     
-    if package.file.stat().st_size > MAX_FILE_SIZE:
-        raise ValueError(f'File too large. Limit for files is {file_size_str(MAX_FILE_SIZE)}')
-    
-    files = Database.get(File, where=File.name == package.file.name)
-    if len(files) > 0:
-        raise ValueError('File already exists')
-    
-    # TODO - Check for duplicates
     # TODO - Check for multiple sdist
     # TODO - Check for valid dist file
     # TODO - Check that if it's a binary wheel, it's on a supported platform
     
     if package.gpg_signature is not None:
         has_signature = True
-        # with open(os.path.join(tmpdir, filename + '.asc'), 'wb') as fp:
-        #     signature_size = 0
-        #     for chunk in iter(lambda: package_data['gpg_signature'].file.read(8096), b''):
-        #         signature_size += len(chunk)
-        #         if signature_size > MAX_SIG_SIZE:
-        #             raise _exc_with_message(HTTPBadRequest, 'Signature too large.')
-        #         fp.write(chunk)
-        #
-        # # Check whether signature is ASCII armored
-        # with open(os.path.join(tmpdir, filename + '.asc'), 'rb') as fp:
-        #     if not fp.read().startswith(b'-----BEGIN PGP SIGNATURE-----'):
-        #         raise _exc_with_message(HTTPBadRequest, 'PGP signature isn\'t ASCII armored.')
+
+        filenames = Database.get(FileName, where=FileName.name == package.signed_file.name)
+        if len(filenames) > 0:
+            raise ValueError(f'File already exists with that name: {package.signed_file.name}')
+        
+        Database.put(FileName, FileName(package.signed_file.name))
     else:
         has_signature = False
     
@@ -289,7 +274,6 @@ def make_package(file: Path, signatures: dict[str, Path]) -> Optional[Package]:
     file = File(
         release_id=release.id,
         name=package.file.name,
-        path=f'files/{package.file.name}',
         python_version=package.pyversion,
         package_type=package.filetype,
         comment_text=package.comment,
@@ -302,16 +286,25 @@ def make_package(file: Path, signatures: dict[str, Path]) -> Optional[Package]:
         # uploaded_via=,
     )
     Database.put(File, file)
+
+    file_size = package.file.stat().st_size
+    if file_size > MAX_FILE_SIZE:
+        raise ValueError(f'File too large. Limit is {file_size_str(MAX_FILE_SIZE)}')
+    project.total_size += file_size
     
-    shutil.copy(package.file, file.path)
+    if has_signature:
+        file_size = package.signed_file.stat().st_size
+        if file_size > MAX_SIG_SIZE:
+            raise ValueError(f'Signature file too large. Limit is {file_size_str(MAX_SIG_SIZE)}')
+        project.total_size += file_size
     
-    # TODO - Move to files
-    
-    project.total_size += file.size
     if project.total_size > MAX_PROJECT_SIZE:
-        raise ValueError('Project is now too large')
+        raise ValueError(f'Project is now too large. Limit is {file_size_str(MAX_PROJECT_SIZE)}')
     
-    # Database.commit()
+    shutil.copy(package.file, f'files/{package.file.name}')
+    if has_signature:
+        shutil.copy(package.signed_file, f'files/{package.signed_file.name}')
+    Database.commit()
     
     return package
 

@@ -5,11 +5,11 @@ import re
 from cgi import parse_header
 from pathlib import Path
 from types import NoneType
-from typing import Sequence, Union, Optional, Tuple, Any, get_origin, get_args, Type
+from typing import Sequence, Union, Optional, Any, get_origin, get_args, Type
 
 import packaging.requirements
 import packaging.specifiers
-import packaging.utils
+import packaging.version
 import pkginfo
 import rfc3986
 from rfc3986 import validators, exceptions
@@ -68,7 +68,7 @@ class Package:
         self.comment: Optional[str] = comment
         
         self.signed_file: Path = self.file.with_name(self.file.name + '.asc')
-        self.gpg_signature: Optional[Tuple[str, bytes]] = None
+        self.gpg_signature: Optional[Path] = None
         
         hashes = {
             'md5':        hashlib.md5(),
@@ -118,7 +118,7 @@ class Package:
         self.metadata_version: str = _validate_metadata_version(_sanitize(str, metadata.metadata_version))
         # version 1.0
         self.name: str = _validate_name(re.sub('[^A-Za-z0-9.]+', '-', _sanitize(str, metadata.name)))
-        self.version: str = packaging.utils.canonicalize_version(_sanitize(str, metadata.version))
+        self.version: str = str(packaging.version.Version(_sanitize(str, metadata.version)))
         self.author: Optional[str] = _sanitize(Optional[str], metadata.author)
         self.author_email: Optional[str] = _validate_email(_sanitize(Optional[str], metadata.author_email))
         self.summary: Optional[str] = _validate_summary(_sanitize(Optional[str], metadata.summary))
@@ -153,7 +153,7 @@ class Package:
         if self.gpg_signature is not None:
             raise InvalidDistribution('GPG Signature can only be added once')
         
-        self.gpg_signature = (signature_file.name, signature_file.read_bytes())
+        self.gpg_signature = signature_file
 
 
 def _validate_hash(message: str, hash: str) -> str:

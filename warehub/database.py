@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import re
-from dataclasses import Field, MISSING, asdict
+from dataclasses import Field, MISSING
 from pathlib import Path
 from typing import Any, Type, TypeVar, Callable
 
@@ -49,6 +49,7 @@ class TableAttr(Field):
     def __eq__(self, other: Any):
         try:
             pattern = re.compile(other)
+            
             def func(data): return pattern.search(data[self.name]) is not None
         except (re.error, TypeError):
             def func(data): return data[self.name] == other
@@ -57,6 +58,7 @@ class TableAttr(Field):
     def __ne__(self, other: Any):
         try:
             pattern = re.compile(other)
+            
             def func(data): return pattern.search(data[self.name]) is None
         except (re.error, TypeError):
             def func(data): return data[self.name] != other
@@ -83,12 +85,12 @@ class Table(metaclass=MetaTable):
         for field in getattr(self, '__dataclass_fields__', {}).values():
             data[field.name] = getattr(self, field.name)
         self.__data__ = data
-
+    
     def __getattribute__(self, name):
         if name != '__data__' and name in (data := getattr(self, '__data__', {})):
             return data[name]
         return super().__getattribute__(name)
-
+    
     def __setattr__(self, name, value):
         if name != '__data__' and name in (data := getattr(self, '__data__', {})):
             data[name] = value
@@ -118,8 +120,13 @@ class Database:
         cls._data = json.loads(cls._file.read_text()) if cls._file.exists() else {}
     
     @classmethod
-    def commit(cls) -> None:
-        cls._file.write_text(json.dumps(cls._data, indent=2))
+    def commit(cls) -> bool:
+        try:
+            cls._file.write_text(json.dumps(cls._data, indent=2))
+            return True
+        except (IOError, Exception) as e:
+            print(f'I/O error({e.errno}): {e.strerror}')
+        return False
     
     @classmethod
     def get(cls, table: Type[TableType], where: Comparison | bool = None) -> list[TableType]:
