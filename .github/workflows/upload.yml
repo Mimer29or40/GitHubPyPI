@@ -33,7 +33,6 @@ jobs:
         run: |
           pip install beautifulsoup4
           pip install trove-classifiers
-          pip install importlib_metadata
           pip install pkginfo
           python -m .github/upload
 

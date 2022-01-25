@@ -2,16 +2,15 @@ from __future__ import annotations
 
 import json
 import re
-from dataclasses import dataclass, field, fields, MISSING
-from datetime import datetime
+from dataclasses import dataclass, field
 from enum import Enum, auto
 from pathlib import Path
-from typing import Any, Optional, Callable
+from typing import Any, Optional
 
 import packaging.utils
 import packaging.version
 
-DATA_FILE = Path('data.json')
+from warehub.database import Table
 
 SIMPLE_DIR = Path('simple')
 PYPI_DIR = Path('pypi')
@@ -30,6 +29,7 @@ def is_pre_release(version: str) -> bool:
 
 
 class PackageType(Enum):
+    none = auto()
     bdist_dmg = auto()
     bdist_dumb = auto()
     bdist_egg = auto()
@@ -41,13 +41,12 @@ class PackageType(Enum):
 
 
 @dataclass
-class Project:
+class Project(Table):
     name: str
     
-    created: datetime = datetime.now()
-    documentation: str = ''
+    created: str = ''
+    documentation: str = None
     total_size: int = 0
-    releases: dict[str, Release] = field(default_factory=dict)
     
     def __repr__(self) -> str:
         return f'Project(name={self.name}, created={self.created})'
@@ -56,92 +55,42 @@ class Project:
     def normalized_name(self):
         return packaging.utils.canonicalize_name(self.name)
     
-    @property
-    def all_versions(self) -> tuple[str, ...]:
-        return tuple(self.releases)
-    
-    @property
-    def latest_version(self) -> str:
-        return versions[0] if len(versions := self.all_versions) > 0 else ''
-    
-    @classmethod
-    def get(cls, name: str, data: dict[str, Any]) -> Project:
-        if name not in data:
-            return cls(name)
-        
-        args = {'name': name}
-        for field in fields(cls):
-            if field.name == 'name':  # Already in dict
-                continue
-            elif field.name not in data:
-                args[field.name] = field.default_factory() if field.default is MISSING else field.default
-            elif field.name == 'releases':  # Special Case
-                releases = data[field.name]
-                args[field.name] = {Release.get(release_name, releases) for release_name in releases}
-            else:
-                args[field.name] = data[field.name]
-        return cls(**args)
+    # @property
+    # def all_versions(self) -> tuple[str, ...]:
+    #     return tuple(self.releases)
+    #
+    # @property
+    # def latest_version(self) -> str:
+    #     return versions[0] if len(versions := self.all_versions) > 0 else ''
 
 
 @dataclass
-class Release:
-    # project_id: Project
-    name: str  # This is the version
+class Release(Table):
+    project_id: int = -1
+    version: str = ''
+    created: str = ''
     author: str = ''
     author_email: str = ''
     maintainer: str = ''
     maintainer_email: str = ''
-    home_page: str = ''
-    license: str = ''
     summary: str = ''
+    description: dict[str, str] = field(default_factory=dict)
     keywords: str = ''
+    classifiers: list[str] = field(default_factory=list)
+    license: str = ''
     platform: str = ''
+    home_page: str = ''
     download_url: str = ''
     requires_python: str = ''
-    created: datetime = datetime.now()
-    description: str = ''
-    yanked: bool = False
-    yanked_reason: str = ''
-    classifiers: list[str] = field(default_factory=dict)
-    files: list[File] = field(default_factory=dict)
-    
-    # dependencies = orm.relationship(
-    #     "Dependency",
-    #     backref="release",
-    #     cascade="all, delete-orphan",
-    #     passive_deletes=True,
-    # )
-    #
-    # _requires = _dependency_relation(DependencyKind.requires)
-    # requires = association_proxy("_requires", "specifier")
-    #
-    # _provides = _dependency_relation(DependencyKind.provides)
-    # provides = association_proxy("_provides", "specifier")
-    #
-    # _obsoletes = _dependency_relation(DependencyKind.obsoletes)
-    # obsoletes = association_proxy("_obsoletes", "specifier")
-    #
-    # _requires_dist = _dependency_relation(DependencyKind.requires_dist)
-    # requires_dist = association_proxy("_requires_dist", "specifier")
-    #
-    # _provides_dist = _dependency_relation(DependencyKind.provides_dist)
-    # provides_dist = association_proxy("_provides_dist", "specifier")
-    #
-    # _obsoletes_dist = _dependency_relation(DependencyKind.obsoletes_dist)
-    # obsoletes_dist = association_proxy("_obsoletes_dist", "specifier")
-    #
-    # _requires_external = _dependency_relation(DependencyKind.requires_external)
-    # requires_external = association_proxy("_requires_external", "specifier")
-    #
-    # _project_urls = _dependency_relation(DependencyKind.project_url)
-    # project_urls = association_proxy("_project_urls", "specifier")
-    
+    dependencies: dict[str, list[str]] = field(default_factory=dict)
     uploader: str = ''  # User that created the issue
     uploaded_via: str = ''
+    yanked: bool = False
+    yanked_reason: str = ''
     
     @property
     def is_pre_release(self):
-        return is_pre_release(self.name)
+        return re.match(rf'(a|b|rc)(0|{_num})', self.version) is not None
     
     @property
     def urls(self):
@@ -182,28 +131,23 @@ class Release:
             self.maintainer_email,
             self.requires_python,
         ))
-    
-    @classmethod
-    def get(cls, name: str, project_data: dict[str, Any] = None) -> Release:
-        if project_data is None:
-            return cls(name)
 
 
-class File:
-    # release: Release
-    python_version: str
-    requires_python: str
-    package_type: PackageType
-    comment_text: str
-    filename: str
-    path: Path
-    size: int
-    has_signature: bool
-    md5_digest: str
-    sha256_digest: str
-    blake2_256_digest: str
-    upload_time: datetime = datetime.now()
-    uploaded_via: str = ''
+@dataclass
+class File(Table):
+    release_id: int = -1
+    name: str = None
+    path: str = None
+    python_version: str = None
+    package_type: PackageType = PackageType.none
+    comment_text: str = None
+    size: int = -1
+    has_signature: bool = False
+    md5_digest: Optional[str] = None
+    sha256_digest: Optional[str] = None
+    blake2_256_digest: Optional[str] = None
+    upload_time: str = ''
+    uploaded_via: str = None
     
     @property
     def pgp_path(self):
