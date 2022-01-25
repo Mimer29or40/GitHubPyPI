@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass, field
-from enum import Enum, auto
 from pathlib import Path
 from typing import Any, Optional
 
@@ -12,32 +11,9 @@ import packaging.version
 
 from warehub.database import Table
 
+FILES_DIR = Path('files')
 SIMPLE_DIR = Path('simple')
 PYPI_DIR = Path('pypi')
-
-JSON = dict[str, Any]
-
-_num = '[1-9][0-9]*'
-
-
-def is_canonical(version: str) -> bool:
-    return re.match(rf'^({_num}!)?(0|{_num})(\.(0|{_num}))*((a|b|rc)(0|{_num}))?(\.post(0|{_num}))?(\.dev(0|{_num}))?$', version) is not None
-
-
-def is_pre_release(version: str) -> bool:
-    return re.match(rf'(a|b|rc)(0|{_num})', version) is not None
-
-
-class PackageType(Enum):
-    none = auto()
-    bdist_dmg = auto()
-    bdist_dumb = auto()
-    bdist_egg = auto()
-    bdist_msi = auto()
-    bdist_rpm = auto()
-    bdist_wheel = auto()
-    bdist_wininst = auto()
-    sdist = auto()
 
 
 @dataclass
@@ -90,19 +66,19 @@ class Release(Table):
     
     @property
     def is_pre_release(self):
-        return re.match(rf'(a|b|rc)(0|{_num})', self.version) is not None
+        return re.match(rf'(a|b|rc)(0|[1-9][0-9]*)', self.version) is not None
     
     @property
     def urls(self):
         _urls = {}
         
         if self.home_page:
-            _urls["Homepage"] = self.home_page
+            _urls['Homepage'] = self.home_page
         if self.download_url:
-            _urls["Download"] = self.download_url
+            _urls['Download'] = self.download_url
         
-        for urlspec in self.project_urls:
-            name, _, url = urlspec.partition(",")
+        for url_spec in self.project_urls:
+            name, _, url = url_spec.partition(',')
             name = name.strip()
             url = url.strip()
             if name and url:
@@ -138,14 +114,14 @@ class File(Table):
     release_id: int = -1
     name: str = None
     python_version: str = None
-    package_type: PackageType = PackageType.none
+    package_type: str = None
     comment_text: str = None
     size: int = -1
     has_signature: bool = False
     md5_digest: Optional[str] = None
     sha256_digest: Optional[str] = None
     blake2_256_digest: Optional[str] = None
-    upload_time: str = ''
+    upload_time: str = None
     uploaded_via: str = None
     
     @property
@@ -181,12 +157,12 @@ class JsonFile:
         return self.path / 'json' / 'index.json'
     
     @property
-    def json(self) -> JSON:
+    def json(self) -> dict[str, Any]:
         with self.file.open('r') as file:
             return json.load(file)
     
     @json.setter
-    def json(self, obj: JSON) -> None:
+    def json(self, obj: dict[str, Any]) -> None:
         with self.file.open('r') as file:
             json.dump(obj, file)
     

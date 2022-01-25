@@ -1,11 +1,15 @@
+from __future__ import annotations
+
 import email.utils
 import hashlib
 import io
 import re
+import shutil
 from cgi import parse_header
+from datetime import datetime
 from pathlib import Path
 from types import NoneType
-from typing import Sequence, Union, Optional, Any, get_origin, get_args, Type
+from typing import Union, Optional, Any, get_origin, get_args, Type
 
 import packaging.requirements
 import packaging.specifiers
@@ -15,11 +19,15 @@ import rfc3986
 from rfc3986 import validators, exceptions
 from trove_classifiers import classifiers, deprecated_classifiers
 
+from warehub import Database, Project, file_size_str, Release, FileName, File
+from warehub.model import FILES_DIR
 
-class InvalidDistribution(Exception):
-    """Raised when a distribution is invalid."""
-    pass
+ONE_MB = 1024 * 1024
+ONE_GB = 1024 * 1024 * 1024
 
+MAX_FILE_SIZE = 100 * ONE_MB
+MAX_SIG_SIZE = 8 * 1024
+MAX_PROJECT_SIZE = 10 * ONE_GB
 
 DIST_TYPES = {
     'bdist_wheel': pkginfo.Wheel,
@@ -48,18 +56,139 @@ DIST_VERSION = {
     ), re.VERBOSE),
 }
 
-MetadataValue = Union[str, Sequence[str], None]
+
+class InvalidDistribution(Exception):
+    """Raised when a distribution is invalid."""
+    pass
 
 
-def _safe_name(name: str) -> str:
-    """Convert an arbitrary string to a standard distribution name.
-
-    Any runs of non-alphanumeric/. characters are replaced with a single '-'.
-
-    Copied from pkg_resources.safe_name for compatibility with warehouse.
-    See https://github.com/pypa/twine/issues/743.
-    """
-    return re.sub('[^A-Za-z0-9.]+', '-', name)
+def make_package(file: Path, signatures: dict[str, Path]) -> Optional[Package]:
+    """Create and sign a package, based off of filename, signatures and settings."""
+    package = Package(file, None)
+    
+    if (signed_name := package.signed_file.name) in signatures:
+        package.gpg_signature = signatures[signed_name]
+    
+    print(f'Package created for file: \'{package.file.name}\' ({file_size_str(package.file.stat().st_size)})')
+    if package.gpg_signature:
+        print(f'\tSigned with {package.signed_file}')
+    
+    projects = Database.get(Project, where=Project.name == package.name)
+    if len(projects) == 0:
+        project = Project(
+            name=package.name,
+            created=datetime.now().isoformat(),
+            documentation='',
+            total_size=0,
+        )
+        Database.put(Project, project)
+    elif len(projects) > 1:
+        raise ValueError(f'Multiple Projects found with name \'{package.name}\'')
+    else:
+        project = projects[0]
+    
+    releases = Database.get(Release, where=(
+            (Release.project_id == project.id) &
+            (Release.version == package.version)
+    ))
+    if len(releases) == 0:
+        release = Release(
+            project_id=project.id,
+            version=package.version,
+            created=datetime.now().isoformat(),
+            author=package.author,
+            author_email=package.author_email,
+            maintainer=package.maintainer,
+            maintainer_email=package.maintainer_email,
+            summary=package.summary,
+            description={
+                'raw':          package.description or '',
+                'content_type': package.description_content_type
+            },
+            keywords=package.keywords,
+            classifiers=package.classifiers,
+            license=package.license,
+            platform=package.platform,
+            home_page=package.home_page,
+            download_url=package.download_url,
+            requires_python=package.requires_python,
+            dependencies={
+                'requires':          package.requires or [],
+                'provides':          package.provides or [],
+                'obsoletes':         package.obsoletes or [],
+                'requires_dist':     package.requires_dist or [],
+                'provides_dist':     package.provides_dist or [],
+                'obsoletes_dist':    package.obsoletes_dist or [],
+                'requires_external': package.requires_external or [],
+                'project_urls':      package.project_urls or [],
+            },
+            # uploader=package.uploader,
+            # uploaded_via=package.uploaded_via,
+            # yanked=package.yanked,
+            # yanked_reason=package.yanked_reason,
+        )
+        Database.put(Release, release)
+    elif len(releases) > 1:
+        raise ValueError(f'Multiple Releases found with name \'{package.name}\'')
+    else:
+        release = releases[0]
+    
+    filenames = Database.get(FileName, where=FileName.name == package.file.name)
+    if len(filenames) > 0:
+        raise ValueError(f'File already exists with that name: {package.file.name}')
+    Database.put(FileName, FileName(package.file.name))
+    
+    # TODO - Check for multiple sdist
+    # TODO - Check for valid dist file
+    # TODO - Check that if it's a binary wheel, it's on a supported platform
+    
+    if package.gpg_signature is not None:
+        has_signature = True
+        
+        filenames = Database.get(FileName, where=FileName.name == package.signed_file.name)
+        if len(filenames) > 0:
+            raise ValueError(f'File already exists with that name: {package.signed_file.name}')
+        
+        Database.put(FileName, FileName(package.signed_file.name))
+    else:
+        has_signature = False
+    
+    file = File(
+        release_id=release.id,
+        name=package.file.name,
+        python_version=package.pyversion,
+        package_type=package.filetype,
+        comment_text=package.comment,
+        size=package.file.stat().st_size,
+        has_signature=has_signature,
+        md5_digest=package.md5_digest,
+        sha256_digest=package.sha256_digest,
+        blake2_256_digest=package.blake2_256_digest,
+        upload_time=datetime.now().isoformat(),
+        # uploaded_via=,
+    )
+    Database.put(File, file)
+    
+    file_size = package.file.stat().st_size
+    if file_size > MAX_FILE_SIZE:
+        raise ValueError(f'File too large. Limit is {file_size_str(MAX_FILE_SIZE)}')
+    project.total_size += file_size
+    
+    if has_signature:
+        file_size = package.signed_file.stat().st_size
+        if file_size > MAX_SIG_SIZE:
+            raise ValueError(f'Signature file too large. Limit is {file_size_str(MAX_SIG_SIZE)}')
+        project.total_size += file_size
+    
+    if project.total_size > MAX_PROJECT_SIZE:
+        raise ValueError(f'Project is now too large. Limit is {file_size_str(MAX_PROJECT_SIZE)}')
+    
+    shutil.copy(package.file, FILES_DIR / package.file.name)
+    if has_signature:
+        shutil.copy(package.signed_file, FILES_DIR / package.signed_file.name)
+    Database.commit()
+    
+    return package
 
 
 class Package:

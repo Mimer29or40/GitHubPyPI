@@ -4,33 +4,21 @@ import argparse
 import json
 import os
 import re
-import shutil
 import tempfile
 from dataclasses import dataclass, field, fields, asdict, MISSING
-from datetime import datetime
 from pathlib import Path
 from pprint import pprint
-from typing import Optional
 
 import requests
 
 from .database import Database
 from .model import Project, Release, File, FileName
-from .package import Package
+from .package import Package, make_package
 
 __version__ = '1.0.0'
 
 from .secrets import Secrets
 from .utils import file_size_str
-
-ONE_MB = 1024 * 1024
-ONE_GB = 1024 * 1024 * 1024
-
-MAX_FILE_SIZE = 100 * ONE_MB
-MAX_SIG_SIZE = 8 * 1024
-MAX_PROJECT_SIZE = 10 * ONE_GB
-
-PATH_HASHER = "blake2_256"
 
 secrets = Secrets()
 
@@ -177,137 +165,5 @@ def handle_arguments(args: Arguments):
         print('View new Packages at:')
         for url in urls:
             print(f'\t{url}')
-
-
-def make_package(file: Path, signatures: dict[str, Path]) -> Optional[Package]:
-    """Create and sign a package, based off of filename, signatures and settings."""
-    package = Package(file, None)
     
-    if (signed_name := package.signed_file.name) in signatures:
-        package.gpg_signature = signatures[signed_name]
-    
-    print(f'Package created for file: \'{package.file.name}\' ({file_size_str(package.file.stat().st_size)})')
-    if package.gpg_signature:
-        print(f'\tSigned with {package.signed_file}')
-    
-    projects = Database.get(Project, where=Project.name == package.name)
-    if len(projects) == 0:
-        project = Project(
-            name=package.name,
-            created=_get_now(),
-            documentation='',
-            total_size=0,
-        )
-        Database.put(Project, project)
-    elif len(projects) > 1:
-        raise ValueError(f'Multiple Projects found with name \'{package.name}\'')
-    else:
-        project = projects[0]
-    
-    releases = Database.get(Release, where=(
-            (Release.project_id == project.id) &
-            (Release.version == package.version)
-    ))
-    if len(releases) == 0:
-        release = Release(
-            project_id=project.id,
-            version=package.version,
-            created=_get_now(),
-            author=package.author,
-            author_email=package.author_email,
-            maintainer=package.maintainer,
-            maintainer_email=package.maintainer_email,
-            summary=package.summary,
-            description={
-                'raw':          package.description or '',
-                'content_type': package.description_content_type
-            },
-            keywords=package.keywords,
-            classifiers=package.classifiers,
-            license=package.license,
-            platform=package.platform,
-            home_page=package.home_page,
-            download_url=package.download_url,
-            requires_python=package.requires_python,
-            dependencies={
-                'requires':          package.requires or [],
-                'provides':          package.provides or [],
-                'obsoletes':         package.obsoletes or [],
-                'requires_dist':     package.requires_dist or [],
-                'provides_dist':     package.provides_dist or [],
-                'obsoletes_dist':    package.obsoletes_dist or [],
-                'requires_external': package.requires_external or [],
-                'project_urls':      package.project_urls or [],
-            },
-            # uploader=package.uploader,
-            # uploaded_via=package.uploaded_via,
-            # yanked=package.yanked,
-            # yanked_reason=package.yanked_reason,
-        )
-        Database.put(Release, release)
-    elif len(releases) > 1:
-        raise ValueError(f'Multiple Releases found with name \'{package.name}\'')
-    else:
-        release = releases[0]
-    
-    filenames = Database.get(FileName, where=FileName.name == package.file.name)
-    if len(filenames) > 0:
-        raise ValueError(f'File already exists with that name: {package.file.name}')
-    Database.put(FileName, FileName(package.file.name))
-    
-    # TODO - Check for multiple sdist
-    # TODO - Check for valid dist file
-    # TODO - Check that if it's a binary wheel, it's on a supported platform
-    
-    if package.gpg_signature is not None:
-        has_signature = True
-
-        filenames = Database.get(FileName, where=FileName.name == package.signed_file.name)
-        if len(filenames) > 0:
-            raise ValueError(f'File already exists with that name: {package.signed_file.name}')
-        
-        Database.put(FileName, FileName(package.signed_file.name))
-    else:
-        has_signature = False
-    
-    # file = File.get(release, package_data['file'])
-    file = File(
-        release_id=release.id,
-        name=package.file.name,
-        python_version=package.pyversion,
-        package_type=package.filetype,
-        comment_text=package.comment,
-        size=package.file.stat().st_size,
-        has_signature=has_signature,
-        md5_digest=package.md5_digest,
-        sha256_digest=package.sha256_digest,
-        blake2_256_digest=package.blake2_256_digest,
-        upload_time=_get_now(),
-        # uploaded_via=,
-    )
-    Database.put(File, file)
-
-    file_size = package.file.stat().st_size
-    if file_size > MAX_FILE_SIZE:
-        raise ValueError(f'File too large. Limit is {file_size_str(MAX_FILE_SIZE)}')
-    project.total_size += file_size
-    
-    if has_signature:
-        file_size = package.signed_file.stat().st_size
-        if file_size > MAX_SIG_SIZE:
-            raise ValueError(f'Signature file too large. Limit is {file_size_str(MAX_SIG_SIZE)}')
-        project.total_size += file_size
-    
-    if project.total_size > MAX_PROJECT_SIZE:
-        raise ValueError(f'Project is now too large. Limit is {file_size_str(MAX_PROJECT_SIZE)}')
-    
-    shutil.copy(package.file, f'files/{package.file.name}')
-    if has_signature:
-        shutil.copy(package.signed_file, f'files/{package.signed_file.name}')
-    Database.commit()
-    
-    return package
-
-
-def _get_now() -> str:
-    return datetime.now().isoformat()
+    print('Generating File Structure')
