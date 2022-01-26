@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import Field, MISSING
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Type, TypeVar, Callable
 
@@ -116,12 +117,21 @@ class Database:
         return cls._file
     
     @classmethod
+    def last_commit(cls) -> datetime:
+        if cls._data is None:
+            cls.rollback()
+        return datetime.fromisoformat(cls._data['last_commit'])
+    
+    @classmethod
     def rollback(cls) -> None:
-        cls._data = json.loads(cls._file.read_text()) if cls._file.exists() else {}
+        cls._data = json.loads(cls._file.read_text()) if cls._file.exists() else {
+            'last_commit': datetime.now().isoformat()
+        }
     
     @classmethod
     def commit(cls) -> bool:
         try:
+            cls._data['last_commit'] = datetime.now().isoformat()
             cls._file.write_text(json.dumps(cls._data, indent=2))
             return True
         except (IOError, Exception) as e:
