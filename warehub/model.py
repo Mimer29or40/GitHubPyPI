@@ -9,11 +9,29 @@ from typing import Any, Optional
 import packaging.utils
 import packaging.version
 
-from warehub.database import Table
+from .database import Table
 
-FILES_DIR = Path('files')
-SIMPLE_DIR = Path('simple')
-PYPI_DIR = Path('pypi')
+__all__ = [
+    'CURRENT_DIR',
+    'FILES_DIR',
+    'SIMPLE_DIR',
+    'PYPI_DIR',
+    'CONFIG_FILE',
+    'DATABASE_FILE',
+    'Project',
+    'Release',
+    'File',
+    'FileName',
+]
+
+CURRENT_DIR: Path = Path('.')
+
+FILES_DIR: Path = CURRENT_DIR / 'files'
+SIMPLE_DIR: Path = CURRENT_DIR / 'simple'
+PYPI_DIR: Path = CURRENT_DIR / 'pypi'
+
+CONFIG_FILE: Path = CURRENT_DIR / 'config.json'
+DATABASE_FILE: Path = CURRENT_DIR / 'data.json'
 
 
 @dataclass
@@ -30,14 +48,6 @@ class Project(Table):
     @property
     def normalized_name(self):
         return packaging.utils.canonicalize_name(self.name)
-    
-    # @property
-    # def all_versions(self) -> tuple[str, ...]:
-    #     return tuple(self.releases)
-    #
-    # @property
-    # def latest_version(self) -> str:
-    #     return versions[0] if len(versions := self.all_versions) > 0 else ''
 
 
 @dataclass

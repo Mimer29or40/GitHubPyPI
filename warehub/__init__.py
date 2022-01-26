@@ -11,14 +11,12 @@ from pprint import pprint
 
 import requests
 
-from .database import Database
-from .model import Project, Release, File, FileName
-from .package import Package, make_package
+from .database import *
+from .model import *
+from .package import *
+from .utils import *
 
 __version__ = '1.0.0'
-
-from .secrets import Secrets
-from .utils import file_size_str
 
 secrets = Secrets()
 
@@ -122,6 +120,8 @@ commands = {c.__name__: c for c in {
 
 def handle_arguments(args: Arguments):
     pprint(args)
+    
+    Database.file(DATABASE_FILE)
     
     repository_url = f'{args.domain}/repos/{args.repository}'
     

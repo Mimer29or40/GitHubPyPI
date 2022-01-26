@@ -7,6 +7,12 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Type, TypeVar, Callable
 
+__all__ = [
+    'DatabaseError',
+    'Table',
+    'Database',
+]
+
 IComparison = Callable[[dict[str, Any]], bool]
 
 

@@ -19,8 +19,15 @@ import rfc3986
 from rfc3986 import validators, exceptions
 from trove_classifiers import classifiers, deprecated_classifiers
 
-from warehub import Database, Project, file_size_str, Release, FileName, File
-from warehub.model import FILES_DIR
+from .database import Database
+from .model import FILES_DIR, Project, Release, FileName, File
+from .utils import file_size_str
+
+__all__ = [
+    'InvalidDistribution',
+    'make_package',
+    'Package',
+]
 
 ONE_MB = 1024 * 1024
 ONE_GB = 1024 * 1024 * 1024
@@ -211,8 +218,8 @@ class Package:
                     hash.update(content)
         
         self.md5_digest: str = hashes['md5'].hexdigest().lower()
-        self.sha256_digest: str = _validate_hash('Use a valid, hex-encoded, SHA256 message digest.', hashes['sha256'].hexdigest().lower())
-        self.blake2_256_digest: str = _validate_hash('Use a valid, hex-encoded, BLAKE2 message digest.', hashes['blake2_256'].hexdigest().lower())
+        self.sha256_digest: str = validate_hash('Use a valid, hex-encoded, SHA256 message digest.', hashes['sha256'].hexdigest().lower())
+        self.blake2_256_digest: str = validate_hash('Use a valid, hex-encoded, BLAKE2 message digest.', hashes['blake2_256'].hexdigest().lower())
         
         self.filetype: str = ''
         for ext, file_type in DIST_EXTENSIONS.items():
@@ -244,39 +251,39 @@ class Package:
             if (m := DIST_VERSION[self.filetype].match(self.file.name)) is not None:
                 self.pyversion = m.group('pyver')
         
-        self.metadata_version: str = _validate_metadata_version(_sanitize(str, metadata.metadata_version))
+        self.metadata_version: str = validate_metadata_version(sanitize(str, metadata.metadata_version))
         # version 1.0
-        self.name: str = _validate_name(re.sub('[^A-Za-z0-9.]+', '-', _sanitize(str, metadata.name)))
-        self.version: str = str(packaging.version.Version(_sanitize(str, metadata.version)))
-        self.author: Optional[str] = _sanitize(Optional[str], metadata.author)
-        self.author_email: Optional[str] = _validate_email(_sanitize(Optional[str], metadata.author_email))
-        self.summary: Optional[str] = _validate_summary(_sanitize(Optional[str], metadata.summary))
-        self.description: Optional[str] = _sanitize(Optional[str], metadata.description)
-        self.keywords: Optional[str] = _sanitize(Optional[str], metadata.keywords)
-        self.license: Optional[str] = _sanitize(Optional[str], metadata.license)
-        self.platform: Optional[str] = _sanitize(Optional[str], metadata.platforms)
-        self.home_page: Optional[str] = _validate_uri(_sanitize(Optional[str], metadata.home_page))
-        self.download_url: Optional[str] = _validate_uri(_sanitize(Optional[str], metadata.download_url))
-        self.supported_platforms: Optional[str] = _sanitize(Optional[str], metadata.supported_platforms)
+        self.name: str = validate_name(re.sub('[^A-Za-z0-9.]+', '-', sanitize(str, metadata.name)))
+        self.version: str = str(packaging.version.Version(sanitize(str, metadata.version)))
+        self.author: Optional[str] = sanitize(Optional[str], metadata.author)
+        self.author_email: Optional[str] = validate_email(sanitize(Optional[str], metadata.author_email))
+        self.summary: Optional[str] = validate_summary(sanitize(Optional[str], metadata.summary))
+        self.description: Optional[str] = sanitize(Optional[str], metadata.description)
+        self.keywords: Optional[str] = sanitize(Optional[str], metadata.keywords)
+        self.license: Optional[str] = sanitize(Optional[str], metadata.license)
+        self.platform: Optional[str] = sanitize(Optional[str], metadata.platforms)
+        self.home_page: Optional[str] = validate_uri(sanitize(Optional[str], metadata.home_page))
+        self.download_url: Optional[str] = validate_uri(sanitize(Optional[str], metadata.download_url))
+        self.supported_platforms: Optional[str] = sanitize(Optional[str], metadata.supported_platforms)
         # version 1.1
-        self.classifiers: list = _validate_classifiers(_sanitize(list, metadata.classifiers))
-        self.requires: Optional[list] = _validate_legacy_non_dist(_sanitize(Optional[list], metadata.requires))
-        self.provides: Optional[list] = _validate_legacy_non_dist(_sanitize(Optional[list], metadata.provides))
-        self.obsoletes: Optional[list] = _validate_legacy_non_dist(_sanitize(Optional[list], metadata.obsoletes))
+        self.classifiers: list = validate_classifiers(sanitize(list, metadata.classifiers))
+        self.requires: Optional[list] = validate_legacy_non_dist(sanitize(Optional[list], metadata.requires))
+        self.provides: Optional[list] = validate_legacy_non_dist(sanitize(Optional[list], metadata.provides))
+        self.obsoletes: Optional[list] = validate_legacy_non_dist(sanitize(Optional[list], metadata.obsoletes))
         # version 1.2
-        self.maintainer: Optional[str] = _sanitize(Optional[str], metadata.maintainer)
-        self.maintainer_email: Optional[str] = _validate_email(_sanitize(Optional[str], metadata.maintainer_email))
-        self.requires_python: Optional[str] = _validate_pep440_specifier(_sanitize(Optional[str], metadata.requires_python))
-        self.requires_dist: Optional[list] = _validate_legacy_dist(_sanitize(Optional[list], metadata.requires_dist))
-        self.provides_dist: Optional[list] = _validate_legacy_dist(_sanitize(Optional[list], metadata.provides_dist))
-        self.obsoletes_dist: Optional[list] = _validate_legacy_dist(_sanitize(Optional[list], metadata.obsoletes_dist))
-        self.requires_external: Optional[list] = _validate_requires_external(_sanitize(Optional[list], metadata.requires_external))
-        self.project_urls: Optional[list] = _validate_project_urls(_sanitize(Optional[list], metadata.project_urls))
+        self.maintainer: Optional[str] = sanitize(Optional[str], metadata.maintainer)
+        self.maintainer_email: Optional[str] = validate_email(sanitize(Optional[str], metadata.maintainer_email))
+        self.requires_python: Optional[str] = validate_pep440_specifier(sanitize(Optional[str], metadata.requires_python))
+        self.requires_dist: Optional[list] = validate_legacy_dist(sanitize(Optional[list], metadata.requires_dist))
+        self.provides_dist: Optional[list] = validate_legacy_dist(sanitize(Optional[list], metadata.provides_dist))
+        self.obsoletes_dist: Optional[list] = validate_legacy_dist(sanitize(Optional[list], metadata.obsoletes_dist))
+        self.requires_external: Optional[list] = validate_requires_external(sanitize(Optional[list], metadata.requires_external))
+        self.project_urls: Optional[list] = validate_project_urls(sanitize(Optional[list], metadata.project_urls))
         # version 2.1
-        self.description_content_type: Optional[str] = _validate_description_content_type(_sanitize(Optional[str], metadata.description_content_type))
-        self.provides_extras: Optional[list] = _sanitize(Optional[list], metadata.provides_extras)
+        self.description_content_type: Optional[str] = validate_description_content_type(sanitize(Optional[str], metadata.description_content_type))
+        self.provides_extras: Optional[list] = sanitize(Optional[list], metadata.provides_extras)
         # version 2.2
-        self.dynamic: Optional[list] = _sanitize(Optional[list], metadata.dynamic)
+        self.dynamic: Optional[list] = sanitize(Optional[list], metadata.dynamic)
     
     def add_gpg_signature(self, signature_file: Path) -> None:
         if self.gpg_signature is not None:
@@ -285,13 +292,13 @@ class Package:
         self.gpg_signature = signature_file
 
 
-def _validate_hash(message: str, hash: str) -> str:
+def validate_hash(message: str, hash: str) -> str:
     if re.match(r'^[A-F0-9]{64}$', hash, re.IGNORECASE) is None:
         raise ValueError(message)
     return hash
 
 
-def _sanitize(type: Type, value: Any) -> Any:
+def sanitize(type: Type, value: Any) -> Any:
     types = get_args(type)
     optional = get_origin(type) is Union and NoneType in types
     type = types[0] if optional else type
@@ -313,20 +320,20 @@ def _sanitize(type: Type, value: Any) -> Any:
     return value
 
 
-def _validate_metadata_version(value):
+def validate_metadata_version(value):
     if value not in ['1.0', '1.1', '1.2', '2.0', '2.1']:
         raise ValueError('Use a known metadata version.')
     return value
 
 
-def _validate_name(value):
+def validate_name(value):
     if re.match(r'^([A-Z0-9]|[A-Z0-9][A-Z0-9._-]*[A-Z0-9])$', value, re.IGNORECASE) is None:
         raise ValueError('Start and end with a letter or numeral containing '
                          'only ASCII numeric and \'.\', \'_\' and \'-\'.')
     return value
 
 
-def _validate_email(value):
+def validate_email(value):
     if value is None:
         return value
     pattern = re.compile((
@@ -346,7 +353,7 @@ def _validate_email(value):
     return value
 
 
-def _validate_summary(value):
+def validate_summary(value):
     if value is None:
         return value
     if len(value or '') > 512:
@@ -356,7 +363,7 @@ def _validate_summary(value):
     return value
 
 
-def _validate_description_content_type(value):
+def validate_description_content_type(value):
     def _raise(message):
         raise ValueError(f'Invalid description content type: {message}')
     
@@ -376,7 +383,7 @@ def _validate_description_content_type(value):
     return value
 
 
-def _validate_classifiers(value):
+def validate_classifiers(value):
     invalid_classifiers = set(value or []) & deprecated_classifiers.keys()
     if invalid_classifiers:
         first_invalid_classifier_name = sorted(invalid_classifiers)[0]
@@ -401,7 +408,7 @@ def _validate_classifiers(value):
     return value
 
 
-def _validate_uri(value):
+def validate_uri(value):
     if value is None:
         return value
     if not is_valid_uri(value):
@@ -409,14 +416,14 @@ def _validate_uri(value):
     return value
 
 
-def _validate_pep440_specifier(value):
+def validate_pep440_specifier(value):
     try:
         packaging.specifiers.SpecifierSet(value)
     except packaging.specifiers.InvalidSpecifier:
         raise ValueError('Invalid specifier in requirement.') from None
 
 
-def _validate_legacy_non_dist(value):
+def validate_legacy_non_dist(value):
     for datum in value:
         try:
             req = packaging.requirements.Requirement(datum.replace('_', ''))
@@ -431,7 +438,7 @@ def _validate_legacy_non_dist(value):
     return value
 
 
-def _validate_legacy_dist(value):
+def validate_legacy_dist(value):
     for datum in value:
         try:
             req = packaging.requirements.Requirement(datum)
@@ -443,7 +450,7 @@ def _validate_legacy_dist(value):
     return value
 
 
-def _validate_requires_external(value):
+def validate_requires_external(value):
     for datum in value:
         parsed = re.search(r'^(?P<name>\S+)(?: \((?P<specifier>\S+)\))?$', datum)
         if parsed is None:
@@ -452,11 +459,11 @@ def _validate_requires_external(value):
         
         # TODO: Is it really reasonable to parse the specifier using PEP 440?
         if specifier is not None:
-            _validate_pep440_specifier(specifier)
+            validate_pep440_specifier(specifier)
     return value
 
 
-def _validate_project_urls(value):
+def validate_project_urls(value):
     for datum in value:
         try:
             label, url = datum.split(', ', 1)
