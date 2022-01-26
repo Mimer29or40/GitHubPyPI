@@ -3,7 +3,7 @@
 <head>
     <!-- Required meta tags -->
     <meta charset="utf-8"/>
-    <meta name="warehub:repository-version" content="1.0.0">
+    <meta name="warehub:repository-version" content="%%WAREHUB_VERSION%%">
     <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport"/>
     <!-- Skeleton CSS -->
     <link crossorigin="anonymous" href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css" rel="stylesheet"/>
@@ -41,43 +41,29 @@
             margin: 1rem 0rem;
         }
     </style>
-    <title>Mimer29or40's PyPI Repository</title>
+    <title>%%TITLE%%</title>
 </head>
 <body>
 <div class="container">
     <section class="header">
-        stubgen
-        <span class="version">1.1.0</span>
+        %%NAME%%
+        <span class="version">%%VERSION%%</span>
     </section>
-    <pre><code>pip install stubgen --extra-index-url https://mimer29or40.github.io/GithubPyPI</code></pre>
+    <pre><code>pip install %%NAME%% --extra-index-url %%URL%%</code></pre>
     <hr/>
     <div class="row">
         <div class="three columns">
-            <button onclick="location.href='https://github.com/Mimer29or40/pythonnet-stubs'">Homepage</button>
-            <p class="elem"><b>Author: </b>Ryan Smith</p>
+            <button onclick="location.href='%%HOMEPAGE%%'">Homepage</button>
+            <p class="elem"><b>Author: </b>%%AUTHOR%%</p>
         </div>
         <div class="nine columns">
             <h6 class="text-header">Description</h6>
-            <p><div class="tip" markdown="1"># pythonnet-stubs
-
-Generate stubs for .NET libraries
-
-
-</div></p>
-            <span style="display:block" class="note"># pythonnet-stubs
-
-Generate stubs for .NET libraries
-
-
-</span>
+            <p><div class="tip" markdown="1">%%DESCRIPTION%%</div></p>
+            <span style="display:block" class="note">%%DESCRIPTION%%</span>
         </div>
     </div>
     <hr/>
-    <h6 class="text-header">Versions</h6>
-    <a href="https://mimer29or40.github.io/GithubPyPI/files/stubgen-1.1.0-py3-none-any.whl">stubgen-1.1.0-py3-none-any.whl</a>
-    <br/>
-    <a href="https://mimer29or40.github.io/GithubPyPI/files/stubgen-1.1.0.tar.gz">stubgen-1.1.0.tar.gz</a>
-    <br/>
+    <h6 class="text-header">Versions</h6>%%FILES%%
 </div>
 </body>
 </html>

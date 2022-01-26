@@ -1,10 +1,80 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Github Hosted PyPI Server</title>
+    <!-- Required meta tags -->
+    <meta charset="utf-8"/>
+    <meta name="warehub:repository-version" content="1.0.0">
+    <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport"/>
+    <!-- Skeleton CSS -->
+    <link crossorigin="anonymous" href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css" rel="stylesheet"/>
+    <!-- Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&amp;display=swap" rel="stylesheet" type="text/css"/>
+    <!-- Favicon -->
+    <link href="https://pypi.org/static/images/logo-small.95de8436.svg" rel="icon"/>
+    <style>
+        body {
+            font-family: "Montserrat";
+        }
+        code {
+            font-size: 100%;
+            display: inline-block !important;
+            font-size: 1.3rem;
+        }
+        .header {
+            margin-top: 6rem;
+            text-align: center;
+        }
+        .text-header {
+            text-transform: uppercase;
+            font-size: 1.4rem;
+            letter-spacing: .2rem;
+            font-weight: 600;
+        }
+        .card {
+            display: inline-block;
+            height: auto;
+            min-width: 32%;
+            padding: 0.5rem 2rem;
+            margin: 0.5rem 0.5rem;
+            color: #555;
+            font-size: 1.5rem;
+            font-weight: 600;
+            line-height: 1.5;
+            letter-spacing: .05rem;
+            text-decoration: none;
+            white-space: normal;
+            background-color: transparent;
+            border-radius: 4px;
+            border: 1px solid #bbb;
+            cursor: pointer;
+            box-sizing: border-box;
+        }
+        .version {
+            font-size: 1rem;
+            font-style: italic;
+        }
+        .description {
+            font-weight: 300;
+        }
+    </style>
+    <title>Mimer29or40's PyPI Repository</title>
 </head>
 <body>
-
+<div class="container">
+    <section class="header">
+        <img class="value-img" src="https://pypi.org/static/images/logo-small.95de8436.svg" width="150"/>
+        <h2 class="title">Mimer29or40's PyPI Repository</h2>
+    </section>
+    These are the packages that I use in other projects but don't want them to be on pypi.org
+    <br>
+    You can install packages with:
+    <pre><code>pip install &lt;package_name&gt; --extra-index-url https://mimer29or40.github.io/GithubPyPI</code></pre>
+    <hr/>
+    <h6 class="text-header">Packages</h6>
+    <a class="card" href="stubgen/">
+        stubgen<span class="version">1.1.0</span>
+        <span class="description">A library for getting data from PIServers</span>
+    </a>
+</div>
 </body>
 </html>

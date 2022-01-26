@@ -16,6 +16,7 @@ __all__ = [
     'FILES_DIR',
     'SIMPLE_DIR',
     'PYPI_DIR',
+    'TEMPLATE_DIR',
     'CONFIG_FILE',
     'DATABASE_FILE',
     'Project',
@@ -29,6 +30,7 @@ CURRENT_DIR: Path = Path('.')
 FILES_DIR: Path = CURRENT_DIR / 'files'
 SIMPLE_DIR: Path = CURRENT_DIR / 'simple'
 PYPI_DIR: Path = CURRENT_DIR / 'pypi'
+TEMPLATE_DIR: Path = CURRENT_DIR / 'template'
 
 CONFIG_FILE: Path = CURRENT_DIR / 'config.json'
 DATABASE_FILE: Path = CURRENT_DIR / 'data.json'
