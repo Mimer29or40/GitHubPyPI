@@ -1,10 +1,12 @@
 import json
 import os
 import re
+from pathlib import Path
 from typing import Any
 
 __all__ = [
     'file_size_str',
+    'delete_path',
     'Secrets',
 ]
 
@@ -16,6 +18,15 @@ def file_size_str(size: int) -> str:
         size = size // 1024
         i += 1
     return f'{size} {suffix[i]}'
+
+
+def delete_path(path: Path) -> None:
+    if path.is_dir():
+        for child in path.glob('*'):
+            delete_path(child)
+        path.rmdir()
+    else:
+        path.unlink(missing_ok=True)
 
 
 class Secrets:

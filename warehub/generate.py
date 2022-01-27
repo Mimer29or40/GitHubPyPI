@@ -2,13 +2,14 @@ import cgi
 import json
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, DefaultDict
+from typing import Any, DefaultDict, Optional
 
 import readme_renderer.markdown
 import readme_renderer.rst
 
 import warehub
 from warehub import CONFIG_FILE, SIMPLE_DIR, PYPI_DIR, Database, Project, Release, WEB_DIR, CURRENT_DIR, File, FILES_DIR, PROJECT_DIR
+from warehub.utils import delete_path
 
 
 def get_config() -> dict[str, Any]:
@@ -30,15 +31,6 @@ def get_config() -> dict[str, Any]:
         cfg['image_url'] = 'https://pypi.org/static/images/logo-small.95de8436.svg'
     
     return cfg
-
-
-def delete_path(path: Path) -> None:
-    if path.is_dir():
-        for child in path.glob('*'):
-            delete_path(child)
-        path.rmdir()
-    else:
-        path.unlink(missing_ok=True)
 
 
 def generate_file_structure():
@@ -134,12 +126,7 @@ def generate_release(config: dict[str, Any], project: Project, release: Release,
     }
     
     links = ''
-    if release.home_page is not None:
-        links += f'\n                <li><a href="{release.home_page}" rel="nofollow">Homepage</a></li>'
-    if release.download_url is not None:
-        links += f'\n                <li><a href="{release.home_page}" rel="nofollow">Download</a></li>'
-    for project_url in release.project_urls:
-        name, url = project_url.split(', ')
+    for name, url in release.urls.items():
         links += f'\n                <li><a href="{url}" rel="nofollow">{name}</a></li>'
     
     meta = ''
@@ -205,7 +192,7 @@ def generate_release(config: dict[str, Any], project: Project, release: Release,
 
 
 def generate_simple(config: dict[str, Any]) -> None:
-    def simple(link_list: str) -> str:
+    def create_simple(link_list: str) -> str:
         template = WEB_DIR / 'simple.html'
         template = template.read_text()
         
@@ -228,32 +215,118 @@ def generate_simple(config: dict[str, Any]) -> None:
             print('Projects does not have any release:', project)
             continue
         
-        latest = releases[0]
         f_list = ''
         for release in releases:
-            if release.version > latest.version:
-                latest = release
-            for file in Database.get(File, where=File.release_id == release.id):
-                f_list += f'\n    <a href="{config["url"]}/{FILES_DIR.name}/{file.name}">{file.name}</a><br/>'
+            if not release.yanked:
+                for file in Database.get(File, where=File.release_id == release.id):
+                    f_list += f'\n    <a href="{config["url"]}/{FILES_DIR.name}/{file.name}">{file.name}</a><br/>'
         
         project_dir = SIMPLE_DIR / project.name
         project_dir.mkdir(parents=True, exist_ok=True)
         
-        template = simple(f_list)
+        template = create_simple(f_list)
         
         project_file = project_dir / 'index.html'
         project_file.write_text(template)
         
         project_list += f'\n    <a class="card" href="{project.name}/">{project.name}</a><br/>'
     
-    template = simple(project_list)
+    template = create_simple(project_list)
     
     landing = SIMPLE_DIR / 'index.html'
     landing.write_text(template)
 
 
 def generate_json(config: dict[str, Any]) -> None:
-    pass
+    def create_json(path: Path, project: Project, release: Release):
+        dir = path / 'json'
+        dir.mkdir(parents=True, exist_ok=True)
+        
+        releases = {}
+        for r in Database.get(Release, where=Release.project_id == project.id):
+            releases[r.version] = [
+                {
+                    'filename':             f.name,
+                    'python_version':       f.python_version,
+                    'packagetype':          f.package_type,
+                    'comment_text':         f.comment_text,
+                    'size':                 f.size,
+                    'has_sig':              f.has_signature,
+                    'md5_digest':           f.md5_digest,
+                    'digests':              {
+                        'md5':        f.md5_digest,
+                        'sha256':     f.sha256_digest,
+                        'blake2_256': f.blake2_256_digest,
+                    },
+                    'downloads':            (-1),
+                    'upload_time':          f.upload_time,
+                    'upload_time_iso_8601': f.upload_time + 'Z',
+                    'url':                  f'{config["url"]}/{FILES_DIR.name}/{f.name}',
+                    'requires_python':      r.requires_python if r.requires_python else None,
+                    'yanked':               r.yanked,
+                    'yanked_reason':        r.yanked_reason or None,
+                }
+                for f in Database.get(File, where=File.release_id == r.id)
+            ]
+        
+        file = dir / 'index.json'
+        file.write_text(json.dumps({
+            'info':            {
+                'name':                     project.name,
+                'version':                  release.version,
+                'summary':                  release.summary,
+                'description_content_type': release.description['content_type'],
+                'description':              release.description['raw'],
+                'keywords':                 release.keywords,
+                'license':                  release.license,
+                'classifiers':              release.classifiers,
+                'author':                   release.author,
+                'author_email':             release.author_email,
+                'maintainer':               release.maintainer,
+                'maintainer_email':         release.maintainer_email,
+                'requires_python':          release.requires_python,
+                'platform':                 release.platform,
+                'downloads':                {'last_day': -1, 'last_week': -1, 'last_month': -1},
+                'package_url':              f'{config["url"]}/{PROJECT_DIR.name}/{project.name}',
+                'project_url':              f'{config["url"]}/{PROJECT_DIR.name}/{project.name}',
+                'project_urls':             release.urls,
+                'release_url':              f'{config["url"]}/{PROJECT_DIR.name}/{project.name}/{release.version}',
+                'requires_dist':            release.dependencies['requires_dist'],
+                'docs_url':                 None,
+                'bugtrack_url':             None,
+                'home_page':                release.home_page,
+                'download_url':             release.download_url,
+                'yanked':                   release.yanked,
+                'yanked_reason':            release.yanked_reason or None,
+            },
+            'urls':            releases[release.version],
+            'releases':        releases,
+            'vulnerabilities': [],
+            'last_serial':     (-1),
+        }, indent=4))
+    
+    for project in Database.get(Project):
+        releases = Database.get(Release, where=Release.project_id == project.id)
+        
+        if len(releases) < 1:
+            # This should never happen because a project is always created
+            # with at least one release, but you never know...
+            print('Projects does not have any release:', project)
+            continue
+        
+        project_dir = PYPI_DIR / project.name
+        project_dir.mkdir(parents=True, exist_ok=True)
+        
+        latest: Optional[Release] = None
+        for release in releases:
+            if not release.yanked:
+                if latest is None or release.version > latest.version:
+                    latest = release
+                
+                create_json(project_dir / release.version, project, release)
+        
+        if latest is not None:
+            create_json(project_dir, project, latest)
 
 
 if __name__ == '__main__':

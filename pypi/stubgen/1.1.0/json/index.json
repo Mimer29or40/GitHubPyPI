@@ -1,0 +1,150 @@
+{
+    "info": {
+        "name": "stubgen",
+        "version": "1.1.0",
+        "summary": "A library for getting data from PIServers",
+        "description_content_type": "text/markdown",
+        "description": "# pythonnet-stubs\n\nGenerate stubs for .NET libraries\n\n\n",
+        "keywords": "pythonnet,generation",
+        "license": null,
+        "classifiers": [
+            "Development Status :: 5 - Production/Stable",
+            "Environment :: Console",
+            "Intended Audience :: Developers",
+            "License :: OSI Approved :: MIT License",
+            "Natural Language :: English",
+            "Programming Language :: Python :: 3",
+            "Programming Language :: Python :: 3.8",
+            "Programming Language :: Python :: 3 :: Only",
+            "Topic :: Software Development :: Build Tools",
+            "Topic :: Software Development :: Code Generators",
+            "Topic :: Software Development :: Documentation",
+            "Topic :: Software Development :: Version Control :: Git",
+            "Topic :: Utilities"
+        ],
+        "author": "Ryan Smith",
+        "author_email": "Ryan.Smith1215@gmail.com",
+        "maintainer": null,
+        "maintainer_email": null,
+        "requires_python": null,
+        "platform": null,
+        "downloads": {
+            "last_day": -1,
+            "last_week": -1,
+            "last_month": -1
+        },
+        "package_url": "https://mimer29or40.github.io/GithubPyPI/project/stubgen",
+        "project_url": "https://mimer29or40.github.io/GithubPyPI/project/stubgen",
+        "project_urls": {
+            "Homepage": "https://github.com/Mimer29or40/pythonnet-stubs",
+            "Source": "https://github.aepsc.com/s316353/pyPIAF",
+            "Bug Reports": "https://github.aepsc.com/s316353/pyPIAF/issues"
+        },
+        "release_url": "https://mimer29or40.github.io/GithubPyPI/project/stubgen/1.1.0",
+        "requires_dist": [
+            "pythonnet (==2.5.2)",
+            "docopt",
+            "setuptools ; extra == 'dev'",
+            "wheel ; extra == 'dev'",
+            "tox ; extra == 'dev'"
+        ],
+        "docs_url": null,
+        "bugtrack_url": null,
+        "home_page": "https://github.com/Mimer29or40/pythonnet-stubs",
+        "download_url": null,
+        "yanked": false,
+        "yanked_reason": null
+    },
+    "urls": [
+        {
+            "filename": "stubgen-1.1.0-py3-none-any.whl",
+            "python_version": "py3",
+            "packagetype": "bdist_wheel",
+            "comment_text": null,
+            "size": 16489,
+            "has_sig": false,
+            "md5_digest": "c817ed7242c6c83b93d6135e56126e7f",
+            "digests": {
+                "md5": "c817ed7242c6c83b93d6135e56126e7f",
+                "sha256": "7de2e22e44c4bfeeacc160c64b1273ca376f2be9b43f1980121ae74f7ab9d11a",
+                "blake2_256": "ecbb7d191c09b27304e464369fa5f3548e8c045c58b859b01d5f06b9f43a19b2"
+            },
+            "downloads": -1,
+            "upload_time": "2022-01-26T15:42:56.319812",
+            "upload_time_iso_8601": "2022-01-26T15:42:56.319812Z",
+            "url": "https://mimer29or40.github.io/GithubPyPI/files/stubgen-1.1.0-py3-none-any.whl",
+            "requires_python": null,
+            "yanked": false,
+            "yanked_reason": null
+        },
+        {
+            "filename": "stubgen-1.1.0.tar.gz",
+            "python_version": null,
+            "packagetype": "sdist",
+            "comment_text": null,
+            "size": 584533,
+            "has_sig": false,
+            "md5_digest": "b18c483c7c3721a8c17529beba6d83d0",
+            "digests": {
+                "md5": "b18c483c7c3721a8c17529beba6d83d0",
+                "sha256": "3c4923bafe72922af363c6ce0cf5d53e374221b2cfe00de2c90da7a054e0579c",
+                "blake2_256": "3d0c4da135226879d83955948fca4411dde9b54b53258a033a6559504a94055c"
+            },
+            "downloads": -1,
+            "upload_time": "2022-01-26T15:42:56.319812",
+            "upload_time_iso_8601": "2022-01-26T15:42:56.319812Z",
+            "url": "https://mimer29or40.github.io/GithubPyPI/files/stubgen-1.1.0.tar.gz",
+            "requires_python": null,
+            "yanked": false,
+            "yanked_reason": null
+        }
+    ],
+    "releases": {
+        "1.1.0": [
+            {
+                "filename": "stubgen-1.1.0-py3-none-any.whl",
+                "python_version": "py3",
+                "packagetype": "bdist_wheel",
+                "comment_text": null,
+                "size": 16489,
+                "has_sig": false,
+                "md5_digest": "c817ed7242c6c83b93d6135e56126e7f",
+                "digests": {
+                    "md5": "c817ed7242c6c83b93d6135e56126e7f",
+                    "sha256": "7de2e22e44c4bfeeacc160c64b1273ca376f2be9b43f1980121ae74f7ab9d11a",
+                    "blake2_256": "ecbb7d191c09b27304e464369fa5f3548e8c045c58b859b01d5f06b9f43a19b2"
+                },
+                "downloads": -1,
+                "upload_time": "2022-01-26T15:42:56.319812",
+                "upload_time_iso_8601": "2022-01-26T15:42:56.319812Z",
+                "url": "https://mimer29or40.github.io/GithubPyPI/files/stubgen-1.1.0-py3-none-any.whl",
+                "requires_python": null,
+                "yanked": false,
+                "yanked_reason": null
+            },
+            {
+                "filename": "stubgen-1.1.0.tar.gz",
+                "python_version": null,
+                "packagetype": "sdist",
+                "comment_text": null,
+                "size": 584533,
+                "has_sig": false,
+                "md5_digest": "b18c483c7c3721a8c17529beba6d83d0",
+                "digests": {
+                    "md5": "b18c483c7c3721a8c17529beba6d83d0",
+                    "sha256": "3c4923bafe72922af363c6ce0cf5d53e374221b2cfe00de2c90da7a054e0579c",
+                    "blake2_256": "3d0c4da135226879d83955948fca4411dde9b54b53258a033a6559504a94055c"
+                },
+                "downloads": -1,
+                "upload_time": "2022-01-26T15:42:56.319812",
+                "upload_time_iso_8601": "2022-01-26T15:42:56.319812Z",
+                "url": "https://mimer29or40.github.io/GithubPyPI/files/stubgen-1.1.0.tar.gz",
+                "requires_python": null,
+                "yanked": false,
+                "yanked_reason": null
+            }
+        ]
+    },
+    "vulnerabilities": [],
+    "last_serial": -1
+}

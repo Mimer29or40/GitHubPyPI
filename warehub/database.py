@@ -145,45 +145,38 @@ class Database:
         return False
     
     @classmethod
-    def get(cls, table: Type[TableType], where: Comparison | bool = None) -> list[TableType]:
+    def _get(cls, table: Type[TableType], where: Comparison | bool = None) -> list[tuple[str, dict[str, Any]]]:
         if cls._data is None:
             cls.rollback()
-        
+
         table_name = table.__name__.lower()
         if table_name not in cls._data:
             return []
-        
+
         pre_check = where is None or (isinstance(where, bool) and where)
-        
-        results: list[TableType] = []
+
+        results: list[tuple[str, dict[str, Any]]] = []
         for id, table_entry in cls._data[table_name].items():
             if pre_check or where.compare(table_entry):
-                entry = table(**table_entry)
-                entry._id = int(id)
-                entry.__data__ = table_entry
-                results.append(entry)
+                results.append((id, table_entry))
         return results
     
     @classmethod
-    def pop(cls, table: Type[TableType], where: Comparison | bool = None) -> list[TableType]:
-        if cls._data is None:
-            cls.rollback()
-        
-        table_name = table.__name__.lower()
-        if table_name not in cls._data:
-            return []
-        
-        pre_check = where is None or (isinstance(where, bool) and where)
-        
-        remove: list[str] = []
+    def get(cls, table: Type[TableType], where: Comparison | bool = None) -> tuple[TableType]:
         results: list[TableType] = []
-        for id, table_entry in cls._data[table_name].items():
-            if pre_check or where.compare(table_entry):
-                remove.append(id)
-                results.append(table(**table_entry))
-        for id in remove:
-            del cls._data[table_name][id]
-        return results
+        for id, table_entry in cls._get(table, where):
+            entry = table(**table_entry)
+            entry._id = int(id)
+            entry.__data__ = table_entry
+            results.append(entry)
+        return tuple(results)
+    
+    @classmethod
+    def pop(cls, table: Type[TableType], where: Comparison | bool = None) -> tuple[TableType]:
+        results: list[TableType] = []
+        for id, table_entry in cls._get(table, where):
+            results.append(table(**table_entry))
+        return tuple(results)
     
     @classmethod
     def put(cls, table: Type[TableType], *entries: TableType):
