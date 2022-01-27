@@ -30,6 +30,7 @@ jobs:
       - name: Run Action
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
+          SECRETS: ${{ secrets.SECRETS }}
         run: |
           pip install -r requirements.txt
           python -m .github/upload
