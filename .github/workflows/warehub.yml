@@ -22,6 +22,8 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - name: Checking out repo
         uses: actions/checkout@v2
+        with:
+          ref: generated
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2.3.1
