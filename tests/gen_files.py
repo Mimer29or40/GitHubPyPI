@@ -69,7 +69,7 @@ def generate_pages(config: dict[str, Any]) -> None:
         project_dir.mkdir(parents=True, exist_ok=True)
         
         latest = releases[0]
-        releases_listing = ''
+        r_list = ''
         for release in releases:
             if release.version > latest.version:
                 latest = release
@@ -77,19 +77,26 @@ def generate_pages(config: dict[str, Any]) -> None:
             release_dir = project_dir / release.version
             release_dir.mkdir(parents=True, exist_ok=True)
             
-            release_template = generate_release(config, project, release)
+            f_list = ''
+            for file in Database.get(File, where=File.release_id == release.id):
+                f_list += '\n'.join([
+                    f'',
+                    f'    <a class="card" href="{config["url"]}/{FILES_DIR.name}/{file.name}">{file.name}</a>',
+                ])
+            
+            release_template = generate_release(config, project, release, '<h6 class="text-header">Files</h6>' + f_list, True)
             
             project_file = release_dir / 'index.html'
             project_file.write_text(release_template)
             
-            releases_listing += '\n'.join([
+            r_list += '\n'.join([
                 f'',
                 f'    <a class="card" href="{release.version}/">',
                 f'        <span class="version">{release.version}</span>',
                 f'    </a>',
             ])
         
-        project_template = generate_release(config, project, latest, releases_listing)
+        project_template = generate_release(config, project, latest, '<h6 class="text-header">Releases</h6>' + r_list)
         
         project_file = project_dir / 'index.html'
         project_file.write_text(project_template)
@@ -119,7 +126,7 @@ def generate_pages(config: dict[str, Any]) -> None:
     homepage.write_text(homepage_template)
 
 
-def generate_release(config: dict[str, Any], project: Project, release: Release, releases_listing=None) -> str:
+def generate_release(config: dict[str, Any], project: Project, release: Release, link_list: str, show_version: bool = False) -> str:
     renderers = {
         'text/plain':    None,
         'text/x-rst':    readme_renderer.rst,
@@ -175,7 +182,7 @@ def generate_release(config: dict[str, Any], project: Project, release: Release,
     elif renderer:
         description = renderer.render(description, **params) or ''
     
-    template = WEB_DIR / ('release.html' if releases_listing is None else 'project.html')
+    template = WEB_DIR / 'release.html'
     template = template.read_text()
     
     for string, value in [
@@ -185,19 +192,20 @@ def generate_release(config: dict[str, Any], project: Project, release: Release,
         ('%%IMAGE%%', config['image_url']),
         ('%%NAME%%', project.name),
         ('%%VERSION%%', release.version),
+        ('%%PIP_VERSION%%', f'=={release.version}' if show_version else ''),
         ('%%SUMMARY%%', release.summary or ''),
         ('%%LINKS%%', links),
         ('%%META%%', meta),
         ('%%CLASSIFIERS%%', classifiers_str),
         ('%%DESCRIPTION%%', description),
-        ('%%RELEASES%%', releases_listing or ''),
+        ('%%LIST%%', link_list),
     ]:
         template = template.replace(string, value)
     return template
 
 
 def generate_simple(config: dict[str, Any]) -> None:
-    def simple(list=None) -> str:
+    def simple(link_list: str) -> str:
         template = WEB_DIR / 'simple.html'
         template = template.read_text()
         
@@ -205,7 +213,7 @@ def generate_simple(config: dict[str, Any]) -> None:
             ('%%WAREHUB_VERSION%%', warehub.__version__),
             ('%%TITLE%%', config['title']),
             ('%%IMAGE%%', config['image_url']),
-            ('%%LIST%%', list or ''),
+            ('%%LIST%%', link_list),
         ]:
             template = template.replace(string, value)
         return template
@@ -221,17 +229,17 @@ def generate_simple(config: dict[str, Any]) -> None:
             continue
         
         latest = releases[0]
-        list = ''
+        f_list = ''
         for release in releases:
             if release.version > latest.version:
                 latest = release
             for file in Database.get(File, where=File.release_id == release.id):
-                list += f'\n    <a href="/{FILES_DIR.name}/{file.name}">{file.name}</a><br/>'
+                f_list += f'\n    <a href="{config["url"]}/{FILES_DIR.name}/{file.name}">{file.name}</a><br/>'
         
         project_dir = SIMPLE_DIR / project.name
         project_dir.mkdir(parents=True, exist_ok=True)
         
-        template = simple(list)
+        template = simple(f_list)
         
         project_file = project_dir / 'index.html'
         project_file.write_text(template)
