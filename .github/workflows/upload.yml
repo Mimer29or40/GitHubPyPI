@@ -31,12 +31,7 @@ jobs:
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
         run: |
-          pip install beautifulsoup4
-          pip install trove-classifiers
-          pip install pkginfo
-          pip install packaging
-          pip install readme_renderer
-          pip install readme_renderer[md]
+          pip install -r requirements.txt
           python -m .github/upload
 
 #      - name: Create Pull Request
