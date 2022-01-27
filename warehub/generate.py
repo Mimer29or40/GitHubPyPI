@@ -2,6 +2,7 @@ import cgi
 import json
 from collections import defaultdict
 from pathlib import Path
+from pprint import pprint
 from typing import Any, DefaultDict, Optional
 
 import readme_renderer.markdown
@@ -45,15 +46,18 @@ def generate_file_structure():
         delete_path(dir_path)
         dir_path.mkdir(parents=True, exist_ok=True)
     
+    print('Generating Project Pages')
     generate_pages(config)
-    
+
+    print('Generating Simple Pages')
     generate_simple(config)
-    
+
+    print('Generating Json Pages')
     generate_json(config)
 
 
 def generate_pages(config: dict[str, Any]) -> None:
-    def generate_release(path: Path, project: Project, release: Release, show_version: bool = False) -> str:
+    def generate_release(path: Path, project: Project, release: Release, show_version: bool = False):
         renderers = {
             'text/plain':    None,
             'text/x-rst':    readme_renderer.rst,
@@ -171,9 +175,13 @@ def generate_pages(config: dict[str, Any]) -> None:
             
             release_dir = project_dir / release.version
             release_dir.mkdir(parents=True, exist_ok=True)
-            
+
+            print('Generating Release Page for:')
+            pprint(release, indent=2)
             generate_release(release_dir, project, release, True)
-        
+
+        print('Generating Project Page for:')
+        pprint(project, indent=2)
         generate_release(project_dir, project, latest)
         
         indent = ' ' * 8
@@ -184,7 +192,8 @@ def generate_pages(config: dict[str, Any]) -> None:
             f'{indent}    <span class="description">{latest.summary}</span>',
             f'{indent}</a>',
         ])
-    
+
+        print('Generating Homepage')
     homepage_template = WEB_DIR / 'homepage.html'
     homepage_template = homepage_template.read_text()
     
@@ -235,6 +244,7 @@ def generate_simple(config: dict[str, Any]) -> None:
         project_dir = SIMPLE_DIR / project.name
         project_dir.mkdir(parents=True, exist_ok=True)
         
+        print('Generating File list for ')
         template = create_simple(f_list)
         
         project_file = project_dir / 'index.html'
