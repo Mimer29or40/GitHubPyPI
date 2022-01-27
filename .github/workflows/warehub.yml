@@ -23,6 +23,12 @@ jobs:
       - name: Checking out repo
         uses: actions/checkout@v2
 
+      - name: Configuring git
+        run: |
+          git branch generated
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2.3.1
         with:
@@ -38,9 +44,6 @@ jobs:
 
       - name: Push to generated branch
         run: |
-          git branch generated
-          git config user.name github-actions
-          git config user.email github-actions@github.com
           git add .
           git commit -m generated
           git push -u origin generated
