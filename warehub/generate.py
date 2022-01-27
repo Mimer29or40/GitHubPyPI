@@ -8,8 +8,13 @@ import readme_renderer.markdown
 import readme_renderer.rst
 
 import warehub
-from warehub import CONFIG_FILE, SIMPLE_DIR, PYPI_DIR, Database, Project, Release, WEB_DIR, CURRENT_DIR, File, FILES_DIR, PROJECT_DIR
-from warehub.utils import delete_path
+from .database import Database
+from .model import CONFIG_FILE, PROJECT_DIR, SIMPLE_DIR, PYPI_DIR, Project, Release, File, FILES_DIR, WEB_DIR, CURRENT_DIR
+from .utils import delete_path
+
+__all__ = [
+    'generate_file_structure',
+]
 
 
 def get_config() -> dict[str, Any]:
@@ -48,6 +53,105 @@ def generate_file_structure():
 
 
 def generate_pages(config: dict[str, Any]) -> None:
+    def generate_release(path: Path, project: Project, release: Release, show_version: bool = False) -> str:
+        renderers = {
+            'text/plain':    None,
+            'text/x-rst':    readme_renderer.rst,
+            'text/markdown': readme_renderer.markdown,
+        }
+        
+        links = ''
+        for name, url in release.urls.items():
+            indent = ' ' * 20
+            links += f'\n{indent}<li><a href="{url}" rel="nofollow">{name}</a></li>'
+        
+        meta = ''
+        for name, check, string in {
+            ('License', release.license, release.license),
+            ('Author', release.author, f'<a href="mailto:{release.author_email}">{release.author}</a>'),
+            ('Maintainer', release.maintainer, f'<a href="mailto:{release.maintainer_email}">{release.maintainer}</a>'),
+            ('Requires', release.requires_python, release.requires_python),
+            ('Platform', release.platform, release.platform),
+        }:
+            if check is not None:
+                indent = ' ' * 16
+                meta += f'\n{indent}<p class="elem"><strong>{name}: </strong>{string}</p>'
+        
+        classifiers: DefaultDict[str, list[str]] = defaultdict(list)
+        for classifier in release.classifiers:
+            group, tag = classifier.split(' :: ', 1)
+            classifiers[group].append(tag)
+        
+        classifiers_str = ''
+        for group, tags in classifiers.items():
+            tags_str = ''
+            for tag in sorted(tags):
+                indent = ' ' * 28
+                tags_str += f'\n{indent}<li>{tag}</li>'
+            indent = ' ' * 20
+            classifiers_str += '\n'.join([
+                f'',
+                f'{indent}<li>',
+                f'{indent}    <strong>{group}</strong>',
+                f'{indent}    <ul>{tags_str}',
+                f'{indent}    </ul>',
+                f'{indent}</li>',
+            ])
+        
+        description = release.description['raw']
+        content_type, params = cgi.parse_header(release.description['content_type'])
+        renderer = renderers.get(content_type, readme_renderer.rst)
+        
+        if description in {None, "UNKNOWN\n\n\n"}:
+            description = ''
+        elif renderer:
+            description = renderer.render(description, **params) or ''
+        
+        releases = ''
+        for r in Database.get(Release, where=Release.project_id == project.id):
+            indent = ' ' * 16
+            # TODO - Pre-Release?, Yanked?, etc
+            releases += '\n'.join([
+                f'',
+                f'{indent}<a class="card" href="{r.version}/">',
+                f'{indent}    <span class="version">{r.version}</span>',
+                f'{indent}</a>',
+            ])
+        
+        files = ''
+        for f in Database.get(File, where=File.release_id == release.id):
+            indent = ' ' * 16
+            files += '\n'.join([
+                f'',
+                f'{indent}<a class="card" href="{config["url"]}/{FILES_DIR.name}/{f.name}">',
+                f'{indent}    {f.name}',
+                f'{indent}</a>',
+            ])
+        
+        template = WEB_DIR / 'release.html'
+        template = template.read_text()
+        
+        for string, value in [
+            ('%%WAREHUB_VERSION%%', warehub.__version__),
+            ('%%URL%%', config['url']),
+            ('%%TITLE%%', config['title']),
+            ('%%IMAGE%%', config['image_url']),
+            ('%%NAME%%', project.name),
+            ('%%VERSION%%', release.version),
+            ('%%PIP_VERSION%%', f'=={release.version}' if show_version else ''),
+            ('%%SUMMARY%%', release.summary or ''),
+            ('%%LINKS%%', links),
+            ('%%META%%', meta),
+            ('%%CLASSIFIERS%%', classifiers_str),
+            ('%%DESCRIPTION%%', description),
+            ('%%RELEASES%%', releases),
+            ('%%FILES%%', files),
+        ]:
+            template = template.replace(string, value)
+        
+        file = path / 'index.html'
+        file.write_text(template)
+    
     projects_listing = ''
     for project in Database.get(Project):
         releases = Database.get(Release, where=Release.project_id == project.id)
@@ -61,7 +165,6 @@ def generate_pages(config: dict[str, Any]) -> None:
         project_dir.mkdir(parents=True, exist_ok=True)
         
         latest = releases[0]
-        r_list = ''
         for release in releases:
             if release.version > latest.version:
                 latest = release
@@ -69,36 +172,17 @@ def generate_pages(config: dict[str, Any]) -> None:
             release_dir = project_dir / release.version
             release_dir.mkdir(parents=True, exist_ok=True)
             
-            f_list = ''
-            for file in Database.get(File, where=File.release_id == release.id):
-                f_list += '\n'.join([
-                    f'',
-                    f'    <a class="card" href="{config["url"]}/{FILES_DIR.name}/{file.name}">{file.name}</a>',
-                ])
-            
-            release_template = generate_release(config, project, release, '<h6 class="text-header">Files</h6>' + f_list, True)
-            
-            project_file = release_dir / 'index.html'
-            project_file.write_text(release_template)
-            
-            r_list += '\n'.join([
-                f'',
-                f'    <a class="card" href="{release.version}/">',
-                f'        <span class="version">{release.version}</span>',
-                f'    </a>',
-            ])
+            generate_release(release_dir, project, release, True)
         
-        project_template = generate_release(config, project, latest, '<h6 class="text-header">Releases</h6>' + r_list)
+        generate_release(project_dir, project, latest)
         
-        project_file = project_dir / 'index.html'
-        project_file.write_text(project_template)
-        
+        indent = ' ' * 8
         projects_listing += '\n'.join([
             f'',
-            f'    <a class="card" href="{PROJECT_DIR.name}/{project.name}/">',
-            f'        {project.name}<span class="version">{latest.version}</span>',
-            f'        <span class="description">{latest.summary}</span>',
-            f'    </a>',
+            f'{indent}<a class="card" href="{PROJECT_DIR.name}/{project.name}/">',
+            f'{indent}    {project.name}<span class="version">{latest.version}</span>',
+            f'{indent}    <span class="description">{latest.summary}</span>',
+            f'{indent}</a>',
         ])
     
     homepage_template = WEB_DIR / 'homepage.html'
@@ -116,79 +200,6 @@ def generate_pages(config: dict[str, Any]) -> None:
     
     homepage = CURRENT_DIR / 'index.html'
     homepage.write_text(homepage_template)
-
-
-def generate_release(config: dict[str, Any], project: Project, release: Release, link_list: str, show_version: bool = False) -> str:
-    renderers = {
-        'text/plain':    None,
-        'text/x-rst':    readme_renderer.rst,
-        'text/markdown': readme_renderer.markdown,
-    }
-    
-    links = ''
-    for name, url in release.urls.items():
-        links += f'\n                <li><a href="{url}" rel="nofollow">{name}</a></li>'
-    
-    meta = ''
-    if release.license is not None:
-        meta += f'            <p class="elem"><strong>License: </strong>{release.license}</p>'
-    if release.author is not None:
-        meta += f'            <p class="elem"><strong>Author: </strong><a href="mailto:{release.author_email}">{release.author}</a></p>'
-    if release.maintainer is not None:
-        meta += f'            <p class="elem"><strong>Maintainer: </strong><a href="mailto:{release.maintainer_email}">{release.maintainer}</a></p>'
-    if release.requires_python is not None:
-        meta += f'            <p class="elem"><strong>Requires: </strong>{release.requires_python}</p>'
-    if release.platform is not None:
-        meta += f'            <p class="elem"><strong>Platform: </strong>{release.platform}</p>'
-    
-    classifiers: DefaultDict[str, list[str]] = defaultdict(list)
-    for classifier in release.classifiers:
-        group, tag = classifier.split(' :: ', 1)
-        classifiers[group].append(tag)
-    
-    classifiers_str = ''
-    for group, tags in classifiers.items():
-        tags_str = ''
-        for tag in sorted(tags):
-            tags_str += f'\n                        <li>{tag}</li>'
-        classifiers_str += '\n'.join([
-            f'',
-            f'                <li>',
-            f'                    <strong>{group}</strong>',
-            f'                    <ul>{tags_str}',
-            f'                    </ul>',
-            f'                </li>',
-        ])
-    
-    description = release.description['raw']
-    content_type, params = cgi.parse_header(release.description['content_type'])
-    renderer = renderers.get(content_type, readme_renderer.rst)
-    
-    if description in {None, "UNKNOWN\n\n\n"}:
-        description = ''
-    elif renderer:
-        description = renderer.render(description, **params) or ''
-    
-    template = WEB_DIR / 'release.html'
-    template = template.read_text()
-    
-    for string, value in [
-        ('%%WAREHUB_VERSION%%', warehub.__version__),
-        ('%%URL%%', config['url']),
-        ('%%TITLE%%', config['title']),
-        ('%%IMAGE%%', config['image_url']),
-        ('%%NAME%%', project.name),
-        ('%%VERSION%%', release.version),
-        ('%%PIP_VERSION%%', f'=={release.version}' if show_version else ''),
-        ('%%SUMMARY%%', release.summary or ''),
-        ('%%LINKS%%', links),
-        ('%%META%%', meta),
-        ('%%CLASSIFIERS%%', classifiers_str),
-        ('%%DESCRIPTION%%', description),
-        ('%%LIST%%', link_list),
-    ]:
-        template = template.replace(string, value)
-    return template
 
 
 def generate_simple(config: dict[str, Any]) -> None:

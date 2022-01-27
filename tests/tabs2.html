@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content:target {
+            display: block;
+            -webkit-animation: fadeEffect 1s;
+            animation: fadeEffect 1s;
+        }
+
+        .tab-folder > .tab-content:target ~ .tab-content:last-child, .tab-folder > .tab-content {
+            display: none;
+        }
+        .tab-folder > :last-child, .tab-folder > .tab-content:target {
+            display: block;
+        }
+
+        /* Fade in tabs */
+        @-webkit-keyframes fadeEffect {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeEffect {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+    </style>
+    <title>Tab Test</title>
+</head>
+<body>
+<ul>
+    <li><a href="#fragment-1">Discussion Tips</a></li>
+    <li><a href="#fragment-2">Assignment Submission Tips</a></li>
+    <li><a href="#fragment-3">Help</a></li>
+    <li><a href="#fragment-4">How to Reach Me</a></li>
+</ul>
+<div id="fragment-1" class="tab-content">
+    <h2><span style="color: #3366ff;"><strong>How to get all of your discussion points</strong></span></h2>
+    <p><img src="https://taftcollege.instructure.com/courses/1492/files/157164/download" alt="healthy relationships.png" width="243" height="243" data-api
+            -endpoint="https://taftcollege.instructure.com/api/v1/courses/1492/files/157164" data-api-returntype="File"/></p>
+    <ol>
+        <li>Post to Discussion Board by Wednesday of the week you are in.</li>
+        <li>Respond to 2 classmates by Sunday</li>
+    </ol>
+    <ul>
+        <li>Your response must encourage dialogue</li>
+        <li>Don't respond with "I agree"</li>
+    </ul>
+</div>
+<div id="fragment-2" class="tab-content">
+    <h2><span style="color: #33cccc;"><strong>Assignment Submission Tips</strong></span></h2>
+    <p><img src="https://taftcollege.instructure.com/courses/1492/files/157028/download" alt="What-You-Need-To-Know.jpg" width="215" height="161" data
+            -api-endpoint="https://taftcollege.instructure.com/api/v1/courses/1492/files/157028" data-api-returntype="File"/></p>
+    <p>When submitting assignments, you'll need to know the following:</p>
+    <ul>
+        <li>Use word to type up all assignments.</li>
+        <li>Microsoft Word for free- follow this video on how to access your free copy of Word.
+        </li>
+        <li>If you experience technical difficulties call the DE Help desk at 661-763-7878 OR 661-763-7917
+        </li>
+        <li>If you experience technical issues <span style="color:#ff0000;"><strong>after hours</strong></span>, call 1-800-555-5555
+        </li>
+    </ul>
+</div>
+<div id="fragment-3" class="tab-content">
+    <h2><strong><span style="color: #800080;">Help</span></strong></h2>
+    <p><img src="https://taftcollege.instructure.com/courses/1492/files/157040/download" alt="late work.jpg" width="248" height="248" data-apiendpoint="https://taftcollege.instructure.com/api/v1/courses/1492/files/157040" data-api-returntype="File"/></p>
+    <ul>
+        <li>Call tech support numbers</li>
+        <li>visit DE Webpage</li>
+    </ul>
+</div>
+<div id="fragment-4" class="tab-content">
+    <h2><span style="color: #ff6600;"><strong>How to Contact Me</strong></span></h2>
+    <p><img src="https://taftcollege.instructure.com/courses/1492/files/229502/download" alt="inbox.png" data-api-endpoint="https://taftcollege.instructure.com/api/v1/courses/1492/files/229502" data-apireturntype="File"/></p>
+    <ol>
+        <li>I will ONLY respond via Canvas mail. Click on the mail icon to the left to reach me.</li>
+        <li>I always respond within 36 hours</li>
+    </ol>
+</div>
+<ul id="menu">
+    <li><a href="#tab1">First tab</a></li>
+    <li><a href="#tab2">Second tab</a></li>
+    <li><a href="#tab3">Third tab</a></li>
+</ul>
+<div class="tab-folder">
+    <div id="tab2" class="tab-content">Content of second tab</div>
+    <div id="tab3" class="tab-content">Content of third tab</div>
+    <div id="tab1" class="tab-content">Content of first tab</div>
+</div>
+</body>
+</html>

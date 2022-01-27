@@ -12,6 +12,7 @@ from pprint import pprint
 import requests
 
 from .database import *
+from .generate import *
 from .model import *
 from .package import *
 from .utils import *
@@ -167,3 +168,4 @@ def handle_arguments(args: Arguments):
             print(f'\t{url}')
     
     print('Generating File Structure')
+    generate_file_structure()

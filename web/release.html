@@ -8,6 +8,7 @@
     <!-- Skeleton CSS -->
     <link crossorigin="anonymous" href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css" rel="stylesheet"/>
     <link crossorigin="anonymous" href="%%URL%%/web/default.css" rel="stylesheet"/>
+    <link crossorigin="anonymous" href="/web/default.css" rel="stylesheet"/>
     <!-- Font -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&amp;display=swap" rel="stylesheet" type="text/css"/>
     <!-- Favicon -->
@@ -27,6 +28,11 @@
     <div class="row">
         <section class="side_panel">
             <div class="three columns">
+                <h5 class="text-header">Navigation</h5>
+                <a class="card" href="#description">Description</a>
+                <a class="card" href="#releases">Releases</a>
+                <a class="card" href="#files">Files</a>
+                <hr/>
                 <h5 class="text-header">Project Links</h5>
                 <ul>%%LINKS%%
                 </ul>
@@ -38,14 +44,22 @@
                 </ul>
             </div>
         </section>
-        <div class="nine columns">
-            %%DESCRIPTION%%
+        <div class="nine columns tabs">
+            <div id="releases" class="tab">
+                <h6 class="text-header">Releases</h6>%%RELEASES%%
+
+            </div>
+            <div id="files" class="tab">
+                <h6 class="text-header">Files</h6>%%FILES%%
+            </div>
+            <div id="description" class="tab">
+                <h6 class="text-header">Project Description</h6>
+                %%DESCRIPTION%%
+            </div>
         </div>
     </div>
     <hr/>
-    <section class="footer">
-        %%LIST%%
-    </section>
+    <section class="footer"></section>
 </div>
 </body>
 </html>

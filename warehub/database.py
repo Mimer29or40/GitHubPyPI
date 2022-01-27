@@ -130,9 +130,12 @@ class Database:
     
     @classmethod
     def rollback(cls) -> None:
-        cls._data = json.loads(cls._file.read_text()) if cls._file.exists() else {
-            'last_commit': datetime.now().isoformat()
-        }
+        try:
+            cls._data = json.loads(cls._file.read_text())
+        except (FileNotFoundError, json.decoder.JSONDecodeError):
+            cls._data = {
+                'last_commit': datetime.now().isoformat()
+            }
     
     @classmethod
     def commit(cls) -> bool:
@@ -148,13 +151,13 @@ class Database:
     def _get(cls, table: Type[TableType], where: Comparison | bool = None) -> list[tuple[str, dict[str, Any]]]:
         if cls._data is None:
             cls.rollback()
-
+        
         table_name = table.__name__.lower()
         if table_name not in cls._data:
             return []
-
+        
         pre_check = where is None or (isinstance(where, bool) and where)
-
+        
         results: list[tuple[str, dict[str, Any]]] = []
         for id, table_entry in cls._data[table_name].items():
             if pre_check or where.compare(table_entry):

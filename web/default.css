@@ -56,3 +56,40 @@ code {
     cursor: pointer;
     box-sizing: border-box;
 }
+
+.tab {
+    display: none;
+}
+
+.tab:target {
+    display: block;
+    -webkit-animation: fadeEffect 1s;
+    animation: fadeEffect 1s;
+}
+
+.tabs > .tab:target ~ .tab:last-child, .tabs > .tab {
+    display: none;
+}
+
+.tabs > :last-child, .tabs > .tab:target {
+    display: block;
+}
+
+/* Fade in tabs */
+@-webkit-keyframes fadeEffect {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeEffect {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
