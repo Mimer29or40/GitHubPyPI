@@ -33,6 +33,10 @@ FILES_DIR: Path = CURRENT_DIR / 'files'
 PROJECT_DIR: Path = CURRENT_DIR / 'project'
 SIMPLE_DIR: Path = CURRENT_DIR / 'simple'
 PYPI_DIR: Path = CURRENT_DIR / 'pypi'
+
+for dir_ in {FILES_DIR, PROJECT_DIR, SIMPLE_DIR, PYPI_DIR}:
+    dir_.mkdir(parents=True, exist_ok=True)
+
 WEB_DIR: Path = CURRENT_DIR / 'web'
 
 CONFIG_FILE: Path = CURRENT_DIR / 'config.json'
