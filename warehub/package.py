@@ -6,7 +6,6 @@ import io
 import re
 import shutil
 from cgi import parse_header
-from datetime import datetime
 from pathlib import Path
 from types import NoneType
 from typing import Union, Optional, Any, get_origin, get_args, Type
@@ -84,9 +83,6 @@ def make_package(file: Path, signatures: dict[str, Path]) -> Optional[Package]:
     if len(projects) == 0:
         project = Project(
             name=package.name,
-            created=datetime.now().isoformat(),
-            documentation='',
-            total_size=0,
         )
         Database.put(Project, project)
     elif len(projects) > 1:
@@ -102,7 +98,6 @@ def make_package(file: Path, signatures: dict[str, Path]) -> Optional[Package]:
         release = Release(
             project_id=project.id,
             version=package.version,
-            created=datetime.now().isoformat(),
             author=package.author,
             author_email=package.author_email,
             maintainer=package.maintainer,
@@ -127,8 +122,8 @@ def make_package(file: Path, signatures: dict[str, Path]) -> Optional[Package]:
                 'provides_dist':     package.provides_dist or [],
                 'obsoletes_dist':    package.obsoletes_dist or [],
                 'requires_external': package.requires_external or [],
-                'project_urls':      package.project_urls or [],
             },
+            project_urls=package.project_urls or [],
             # uploader=package.uploader,
             # uploaded_via=package.uploaded_via,
             # yanked=package.yanked,
@@ -171,7 +166,6 @@ def make_package(file: Path, signatures: dict[str, Path]) -> Optional[Package]:
         md5_digest=package.md5_digest,
         sha256_digest=package.sha256_digest,
         blake2_256_digest=package.blake2_256_digest,
-        upload_time=datetime.now().isoformat(),
         # uploaded_via=,
     )
     Database.put(File, file)

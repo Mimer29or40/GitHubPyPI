@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
 
@@ -14,9 +15,10 @@ from .database import Table
 __all__ = [
     'CURRENT_DIR',
     'FILES_DIR',
+    'PROJECT_DIR',
     'SIMPLE_DIR',
     'PYPI_DIR',
-    'TEMPLATE_DIR',
+    'WEB_DIR',
     'CONFIG_FILE',
     'DATABASE_FILE',
     'Project',
@@ -28,9 +30,10 @@ __all__ = [
 CURRENT_DIR: Path = Path('.')
 
 FILES_DIR: Path = CURRENT_DIR / 'files'
+PROJECT_DIR: Path = CURRENT_DIR / 'project'
 SIMPLE_DIR: Path = CURRENT_DIR / 'simple'
 PYPI_DIR: Path = CURRENT_DIR / 'pypi'
-TEMPLATE_DIR: Path = CURRENT_DIR / 'template'
+WEB_DIR: Path = CURRENT_DIR / 'web'
 
 CONFIG_FILE: Path = CURRENT_DIR / 'config.json'
 DATABASE_FILE: Path = CURRENT_DIR / 'data.json'
@@ -40,8 +43,8 @@ DATABASE_FILE: Path = CURRENT_DIR / 'data.json'
 class Project(Table):
     name: str
     
-    created: str = ''
-    documentation: str = None
+    created: str = datetime.now().isoformat()
+    documentation: Optional[str] = None
     total_size: int = 0
     
     def __repr__(self) -> str:
@@ -54,27 +57,28 @@ class Project(Table):
 
 @dataclass
 class Release(Table):
-    project_id: int = -1
-    version: str = ''
-    created: str = ''
-    author: str = ''
-    author_email: str = ''
-    maintainer: str = ''
-    maintainer_email: str = ''
-    summary: str = ''
+    project_id: int
+    version: str
+    created: str = datetime.now().isoformat()
+    author: Optional[str] = None
+    author_email: Optional[str] = None
+    maintainer: Optional[str] = None
+    maintainer_email: Optional[str] = None
+    summary: Optional[str] = None
     description: dict[str, str] = field(default_factory=dict)
-    keywords: str = ''
+    keywords: Optional[str] = None
     classifiers: list[str] = field(default_factory=list)
-    license: str = ''
-    platform: str = ''
-    home_page: str = ''
-    download_url: str = ''
-    requires_python: str = ''
+    license: Optional[str] = None
+    platform: Optional[str] = None
+    home_page: Optional[str] = None
+    download_url: Optional[str] = None
+    requires_python: Optional[str] = None
     dependencies: dict[str, list[str]] = field(default_factory=dict)
-    uploader: str = ''  # User that created the issue
-    uploaded_via: str = ''
+    project_urls: list[str] = field(default_factory=list)
+    uploader: Optional[str] = None  # User that created the issue
+    uploaded_via: Optional[str] = None
     yanked: bool = False
-    yanked_reason: str = ''
+    yanked_reason: Optional[str] = None
     
     @property
     def is_pre_release(self):
@@ -123,18 +127,18 @@ class Release(Table):
 
 @dataclass
 class File(Table):
-    release_id: int = -1
-    name: str = None
-    python_version: str = None
-    package_type: str = None
-    comment_text: str = None
+    release_id: int
+    name: str
+    python_version: Optional[str] = None
+    package_type: Optional[str] = None
+    comment_text: Optional[str] = None
     size: int = -1
     has_signature: bool = False
     md5_digest: Optional[str] = None
     sha256_digest: Optional[str] = None
     blake2_256_digest: Optional[str] = None
-    upload_time: str = None
-    uploaded_via: str = None
+    upload_time: str = datetime.now().isoformat()
+    uploaded_via: Optional[str] = None
     
     @property
     def pgp_name(self):

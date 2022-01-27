@@ -35,6 +35,8 @@ jobs:
           pip install trove-classifiers
           pip install pkginfo
           pip install packaging
+          pip install readme_renderer
+          pip install readme_renderer[md]
           python -m .github/upload
 
 #      - name: Create Pull Request
