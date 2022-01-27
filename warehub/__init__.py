@@ -120,6 +120,7 @@ commands = {c.__name__: c for c in {
 
 
 def handle_arguments(args: Arguments):
+    print('Current Directory:', Path('.').absolute())
     pprint(args)
     
     Database.file(DATABASE_FILE)
@@ -145,13 +146,16 @@ def handle_arguments(args: Arguments):
             for asset in info['assets']:
                 file_url = asset['browser_download_url']
                 
-                print(f'Downloading File: {file_url}')
                 download = requests.get(file_url, auth=auth)
                 if download.status_code != requests.codes.ok:
-                    raise LookupError(f'Could not download \'{file_url}\': {download.status_code}')
+                    print(f'Could not download \'{file_url}\': {download.status_code}')
+                    continue
                 
                 downloaded_file = temp_dir / Path(file_url).name
                 downloaded_file.write_bytes(download.content)
+                
+                print(f'Downloaded File: {file_url}')
+                print(f'  to: {downloaded_file.absolute()}')
                 
                 files.append(downloaded_file)
         
@@ -160,12 +164,16 @@ def handle_arguments(args: Arguments):
         
         urls = set()
         for file in files:
-            if file.suffix != '.asc' and (p := make_package(file, signatures)) is not None:
-                urls.add(f'simple/{p.name}/{p.version}/')
-        
+            try:
+                if file.suffix != '.asc' and (p := make_package(file, signatures)) is not None:
+                    urls.add(f'simple/{p.name}/{p.version}/')
+            except ValueError as e:
+                print(str(e))
+    
+    if len(urls) > 0:
         print('View new Packages at:')
         for url in urls:
             print(f'\t{url}')
-    
-    print('Generating File Structure')
-    generate_file_structure()
+        
+        print('Generating File Structure')
+        generate_file_structure()

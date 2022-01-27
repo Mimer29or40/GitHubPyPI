@@ -11,5 +11,5 @@ assignees: ''
 
 - **Domain:** <!--- Required -->
 - **Repository:** <!--- Required -->
-- **Username:** <!--- Optional -->
-- **Password:** <!--- Optional -->
+- **Username:** 
+- **Password:** 
