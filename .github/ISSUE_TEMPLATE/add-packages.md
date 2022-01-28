@@ -9,7 +9,7 @@ assignees: ''
 
 ## Add Repository Packages Form
 
-- **Domain:** <!--- Required -->
+- **Domain:** 
 - **Repository:** <!--- Required -->
 - **Username:** 
 - **Password:** 
