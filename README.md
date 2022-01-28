@@ -1,4 +1,4 @@
-# Personal PyPI
+# Github Hosted PyPI
 
 Make all your private packages accessible in one place with this github hosted PyPI index.
 
