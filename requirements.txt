@@ -1,7 +1,0 @@
-requests>=2.27.1
-packaging>=21.3
-pkginfo>=1.8.2
-rfc3986>=2.0.0
-trove_classifiers>=2022.1.6
-readme_renderer>=32.0
-cmarkgfm>=0.7.0

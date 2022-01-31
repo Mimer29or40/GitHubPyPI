@@ -3,31 +3,128 @@
 <head>
     <!-- Required meta tags -->
     <meta charset="utf-8"/>
-    <meta name="warehub:repository-version" content="%%WAREHUB_VERSION%%"/>
+    <meta name="warehub:repository-version" content="1.0.0"/>
     <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport"/>
     <!-- Skeleton CSS -->
     <link crossorigin="anonymous" href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css" rel="stylesheet"/>
-    <link crossorigin="anonymous" href="%%URL%%/web/default.css" rel="stylesheet"/>
     <!-- Font -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&amp;display=swap" rel="stylesheet" type="text/css"/>
     <!-- Favicon -->
-    <link href="%%IMAGE%%" rel="icon"/>
-    <title>%%TITLE%%</title>
+    <link href="https://pypi.org/static/images/logo-small.95de8436.svg" rel="icon"/>
+    <style>
+        body {
+            font-family: "Montserrat", serif;
+        }
+        
+        code {
+            display: inline-block !important;
+            font-size: 1.3rem;
+        }
+        
+        .header {
+            margin-top: 10rem;
+            text-align: center;
+        }
+        
+        .footer {
+            margin-bottom: 10rem;
+        }
+        
+        .side_panel {
+            font-size: 1.3rem;
+        }
+        
+        .text-header {
+            text-transform: uppercase;
+            font-size: 1.4rem;
+            letter-spacing: .2rem;
+            font-weight: 600;
+        }
+        
+        .version {
+            font-size: 2.3rem;
+            font-style: italic;
+            font-weight: 300;
+        }
+        
+        .elem {
+            margin: 1rem 1rem;
+        }
+        
+        .card {
+            display: inline-block;
+            height: auto;
+            min-width: 1%;
+            padding: 0.5rem 2rem;
+            margin: 0.5rem 0.5rem;
+            color: #555;
+            font-size: 1.5rem;
+            font-weight: 600;
+            line-height: 1.5;
+            letter-spacing: .05rem;
+            text-decoration: none;
+            white-space: normal;
+            background-color: transparent;
+            border-radius: 4px;
+            border: 1px solid #bbb;
+            cursor: pointer;
+            box-sizing: border-box;
+        }
+        
+        .tab {
+            display: none;
+        }
+        
+        .tab:target {
+            display: block;
+            -webkit-animation: fadeEffect 1s;
+            animation: fadeEffect 1s;
+        }
+        
+        .tabs > .tab:target ~ .tab:last-child, .tabs > .tab {
+            display: none;
+        }
+        
+        .tabs > :last-child, .tabs > .tab:target {
+            display: block;
+        }
+        
+        /* Fade in tabs */
+        @-webkit-keyframes fadeEffect {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        
+        @keyframes fadeEffect {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+    </style>
+    <title>Personal Python Package Index</title>
 </head>
 <body>
 <div class="container">
     <section class="header">
-        <img class="value-img" src="%%IMAGE%%" width="150" alt="Repository Image"/>
-        <h2 class="title">%%TITLE%%</h2>
+        <img class="value-img" src="https://pypi.org/static/images/logo-small.95de8436.svg" width="150" alt="Repository Image"/>
+        <h2 class="title">Personal Python Package Index</h2>
     </section>
-    %%DESCRIPTION%%
+    Welcome to your private Python package index!
     <br>
-    <pre><code>pip install &lt;package_name&gt; --extra-index-url %%URL%%/simple</code></pre>
+    <pre><code>pip install &lt;package_name&gt; --extra-index-url https://mimer29or40.github.io/GithubPyPI/simple</code></pre>
     <br>
     Add this repository to PyCharm with the url:
-    <pre><code>%%URL%%/simple</code></pre>
+    <pre><code>https://mimer29or40.github.io/GithubPyPI/simple</code></pre>
     <hr/>
-    <h6 class="text-header">Packages</h6>%%PACKAGES%%
+    <h6 class="text-header">Packages</h6>
 </div>
 </body>
 </html>
+-

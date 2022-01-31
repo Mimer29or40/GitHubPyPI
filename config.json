@@ -1,4 +1,8 @@
 {
+    "path": ".",
+    "database": "data.json",
     "url": "https://mimer29or40.github.io/GithubPyPI",
-    "title": "Your PyPI Repository"
+    "title": "Personal Python Package Index",
+    "description": "Welcome to your private Python package index!",
+    "image_url": "https://pypi.org/static/images/logo-small.95de8436.svg"
 }

@@ -2,22 +2,7 @@
 
 Make all your private packages accessible in one place with this github hosted PyPI index.
 
-Build using warehub
-
----
-
-<div style="text-align: center;">
-<p>
-  <a href="#features">Features</a> •
-  <a href="#description">Description</a> •
-  <a href="#get-started">Get Started</a> •
-  <a href="#configuring">Configuring</a> •
-  <a href="#Adding-Packages">Adding Packages</a> •
-  <a href="#faq">FAQ</a> •
-  <a href="#contribute">Contribute</a> •
-  <a href="#references">References</a>
-</p>
-</div>
+Built using warehub
 
 ---
 
@@ -33,13 +18,10 @@ This repository is a Github page used as a PyPI index, conform to [PEP503](https
 
 You can use it to group all your packages in one place, and access it easily through `pip`, almost like any other package publicly available!
 
----
-
-_While the PyPI index is public, private packages indexed here are kept private: you will need Github authentication to be able to retrieve it._
-
 ## Get started
 
-* Use this template and create your own repository: [![Generic badge](https://img.shields.io/badge/Use%20this%20template-blueviolet.svg)](https://github.com/Mimer29or40/GithubPyPI/generate)
+* Use this template and create your own
+  repository: [![Generic badge](https://img.shields.io/badge/Use%20this%20template-blueviolet.svg)](https://github.com/Mimer29or40/GithubPyPI/generate)
 * Go to `Settings` of your repository, and enable Github Pages
 * Create an issue with the template
 * Make a Pull Request to merge the generated branch.
@@ -47,33 +29,27 @@ _While the PyPI index is public, private packages indexed here are kept private:
 
 ## Configuring
 
-* **`title`: string** - The title to display on the webpages.
-* **`url`: string** - The url of the github page.
-* **`description`: string** - Any text you want to display on the homepage.
-    * _default: `Welcome to your private Python package index!`_
-* **`image_url`: string** - Url to an image to display at the top of the pages.
-    * _default: `https://pypi.org/static/images/logo-small.95de8436.svg`._
-
-Sample `config.json`:
-
-```json
-{
-    "title": "My PyPI Repository",
-    "url": "User123.github.io/MyRepo"
-}
-```
+* `path`: **Required** - The path to the base directory where warehub will write files.
+* `database`: **Required** - The path to the database file relative to `path`.
+* `url`: **Required** - The url to the website homepage. Usually in the form `<user>.github.io/<repo_name>`
+* `title`: **Optional** - The title of the website.
+    * Default: `Personal Python Package Index`
+* `description`: **Optional** - Text to show on the homepage.
+    * Default: `Welcome to your private Python package index!`
+* `image_url`: **Optional** - The url to an image that will be the favicon and will be displayed on every page
+    * Default: `https://pypi.org/static/images/logo-small.95de8436.svg`
 
 ## Adding Packages
 
 To add new packages to the repository. Simply create an Issue using the available template and enter the information.
 
-* **`Domain`:** The domain to access the github api from. This is mainly used for enterprise github users
-    * _default: `https://api.github.com`_
 * **`Repository`:** The path to the github page. Usually in the form `<user>/<repo_name>`
+* **`Domain`:** The domain to access the github api from. This is mainly used for enterprise github users
+    * Default: `https://api.github.com`
 * **`Username`:** The username to use for authentication
-    * _default: `%%USERNAME%%`_
+    * Default: `env.WAREHUB_USERNAME`
 * **`Password`:** The password to use for authentication
-    * _default: `%%PASSWORD%%`._
+    * Default: `env.WAREHUB_USERNAME`
 
 Sample:
 
@@ -81,35 +57,26 @@ Sample:
 ## Add Repository Packages Form
 
 - **Repository:** User123/PythonPackage
+- **Domain:**
+- **Username:**
+- **Password:**
 ```
 
 ### Note: Username and Passwords
 
-It is bad practice to supply username's and password's in plain text hosted on a public platform.
+It is bad practice to supply username's and password's in plain text especially when hosted on a public platform.
 
-In order to get around that, warehub can be told to look for this information in the environment variable `SECRETS`. Warehub expects this environment variable to be a json object string where the keys and values are case sensitive.
+To prevent this vulnerability, warehub can pull this information from the environment variables `WAREHUB_USERNAME` and `WAREHUB_PASSWORD`. This is the recommended way to provide a
+username and password.
 
-```json
-{"KEY1": "value1", "Key_2": "value2"}
-```
-
-When a username or password is specified in the format `%%KEY%%`, warehub will look in secrets for a value with key `KEY`.
-
-#### Workflow:
-
-1. Define the secrets dictionary as a json dictionary.
-    - Command Line: `SECRETS={"MY_USERNAME":"user123","MY_PASSWORD":"this_is_my_password"}`
-    - Github Actions: Define a [repository secret](https://docs.github.com/en/actions/security-guides/encrypted-secrets) named `SECRETS` with value `{"MY_USERNAME":"user123","MY_PASSWORD":"this_is_my_password"}`
-2. Specify the username and password.
-    - Username: %%MY_USERNAME%%
-    - Password: %%MY_PASSWORD%%
-3. Warehub with transform the value without any sensitive information being shown anythere.
+[Defining Environment Variables in Github](https://docs.github.com/en/actions/security-guides/encrypted-secrets)
 
 ## FAQ
 
 #### Q. Is it secure?
 
-As you may know, standard Github pages are public so any packages that are imported to it will be public as well. It is only possible to make private repo's with GitHub Pro, GitHub Team, GitHub Enterprise Cloud, and GitHub Enterprise Server.
+As you may know, standard Github pages are public so any packages that are imported to it will be public as well. It is only possible to make private repo's with GitHub Pro, GitHub
+Team, GitHub Enterprise Cloud, and GitHub Enterprise Server.
 
 #### Q. What happen behind the scenes?
 
@@ -136,7 +103,8 @@ To do this:
 
 You can just specify a different name for your indexed package. Just give it a different name in the form when registering it.
 
-For example if you have a private package named `tensorflow`, when you register it in this index, you can name it `my_cool_tensorflow`, so there is no name-collision with the public package `tensorflow`.  
+For example if you have a private package named `tensorflow`, when you register it in this index, you can name it `my_cool_tensorflow`, so there is no name-collision with the
+public package `tensorflow`.  
 Then you can install it with `pip install my_cool_tensorflow --extra-index-url <repo_url>`.
 
 Then from `python`, you can just do:

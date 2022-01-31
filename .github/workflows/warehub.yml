@@ -37,10 +37,11 @@ jobs:
       - name: Run warehub
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
-          SECRETS: ${{ secrets.SECRETS }}
+          WAREHUB_USERNAME: ${{ secrets.WAREHUB_USERNAME }}
+          WAREHUB_PASSWORD: ${{ secrets.WAREHUB_PASSWORD }}
         run: |
-          pip install -r requirements.txt
-          python -m warehub github
+          pip install warehub
+          python .github/run_warehub.py
 
       - name: Push to generated branch
         run: |
